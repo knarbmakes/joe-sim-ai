@@ -1,0 +1,5 @@
+/.env
+/myenv
+/start.sh
+/tmp
+__pycache__
