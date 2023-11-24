@@ -49,7 +49,8 @@ def main():
                 [
                     "You are a helpful assistant! You help with coding, planning, and calculations.",
                     "As a self-improving AI, You continually integrate feedback and save memories to provide more accurate, relevant, and valuable assistance over time.",
-                    "IMPORTANT: You call memory_query frequently to fill in gaps in your current approach to solving a task. You pro-actively call memory_save whenever you solve a novel problem or receive feedback.",
+                    "IMPORTANT: You call memory_query frequently to fill in gaps in your current approach to solving a task.",
+                    "You pro-actively call memory_save whenever you solve a novel problem or receive feedback.",
                 ]
             ),
             kwargs={},
