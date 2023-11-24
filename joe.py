@@ -12,6 +12,7 @@ import src.tools.memory_delete
 import src.tools.web_search
 import src.tools.scrape_website
 import src.tools.file_read
+import src.tools.file_write
 import src.tools.bash
 
 # Configure logging

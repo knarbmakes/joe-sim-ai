@@ -42,14 +42,15 @@ class FileWrite(BaseTool):
         if validation_error:
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})
 
-        filepath = args["filepath"]
-        contents = args["contents"]
-        permissions = args.get("permissions")
-
-        # Ensure the directory for the file exists
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-
         try:
+            filepath = args["filepath"]
+            contents = args["contents"]
+            permissions = args.get("permissions")
+
+            dir_path = os.path.dirname(filepath)
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)
+
             with open(filepath, 'w', encoding='utf-8') as file:
                 file.write(contents)
 
