@@ -13,11 +13,12 @@ from src.core.cost_helper import (
 )
 from src.core.tool_registry import ToolRegistry
 from typing import NamedTuple, Dict, Any, Optional
+from datetime import datetime
 import concurrent.futures
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 load_dotenv()
 openai_client = openai.OpenAI(
@@ -135,6 +136,11 @@ class ToolAgent:
             chat_history.pop(0)
             final_count -= 1
 
+        # After trimming the list for token limits, remove any messages with role = tool from the start of the list
+        while chat_history and chat_history[0]["role"] == "tool":
+            chat_history.pop(0)
+            final_count -= 1
+
         # Pop the messages from the database as well so we don't keep growing the list infinitely.
         if final_count < len(chat_history):
             self.agent_service.update_context_memory(
@@ -225,6 +231,7 @@ class ToolAgent:
             )
             return json.dumps({"error": f"Function {function_name} not found!"})
         else:
+            logger.info(f"Executing function {function_name} with args {function_args}")
             return self.available_functions[function_name].run(function_args, self)
 
     def run(self, input_messages=None, system_message_override=None):
@@ -242,7 +249,8 @@ class ToolAgent:
 
             # Update system message if it's overridden
             if system_message_override:
-                self.text_config.system_message = system_message_override
+                self.text_config = self.text_config._replace(system_message=system_message_override)
+
 
             # Loop until we stop getting function calls or we exceed the budget.
             while True:
@@ -260,6 +268,21 @@ class ToolAgent:
                 if available_function_definitions:
                     kwargs["tools"] = available_function_definitions
 
+                # Log the completion request to a file in tmp/logs
+                logfile = f"tmp/logs/completion_requests{self.agent_key}_{datetime.now().isoformat()}.json"
+                # ensure dir exists
+                os.makedirs(os.path.dirname(logfile), exist_ok=True)
+                with open(logfile, "a") as f:
+                    f.write(
+                        json.dumps(
+                            {
+                                "model": self.text_config.model,
+                                "messages": messages,                                
+                                "kwargs": kwargs,
+                            }, indent=2
+                        )
+                        + "\n"
+                    )
                 completion = openai_client.chat.completions.create(
                     model=self.text_config.model,
                     messages=messages,

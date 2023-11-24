@@ -1,5 +1,6 @@
 import json
 import subprocess
+import time
 from src.core.base_tool import BaseTool
 from src.core.tool_registry import register_fn
 
@@ -41,13 +42,19 @@ class RunBashCommand(BaseTool):
             return json.dumps({"error": "Command exceeds the maximum length of 500 characters."})
 
         try:
+            t0 = time.time()
+
             result = subprocess.run(command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=COMMAND_TIMEOUT)
             stdout_tail = (result.stdout[-MAX_OUTPUT_LENGTH:] if len(result.stdout) > MAX_OUTPUT_LENGTH else result.stdout)
             stderr_tail = (result.stderr[-MAX_OUTPUT_LENGTH:] if len(result.stderr) > MAX_OUTPUT_LENGTH else result.stderr)
 
+            tn = time.time()
+            duration = tn - t0
+
             return json.dumps({
                 "stdout": stdout_tail,
-                "stderr": stderr_tail
+                "stderr": stderr_tail,
+                "duration": f"{duration:.2f}s"
             })
 
         except subprocess.TimeoutExpired:
