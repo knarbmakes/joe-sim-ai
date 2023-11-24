@@ -1,102 +1,117 @@
-import json
-import os
 import logging
 from dotenv import load_dotenv
 from src.core.file_based_context import FileBasedContext
 from src.core.tool_agent import ObjectConfig, TextConfig, ToolAgent
+from datetime import datetime
+import chromadb
 
 # IMPORTANT: Import all tools so registry can be populated
-import src.tools.calculator
-import src.tools.host_action
-import src.tools.host_plan
-import src.tools.world_change
-import src.tools.perception_update
+import src.tools.asteval
+import src.tools.memory_save
+import src.tools.memory_query
+import src.tools.memory_delete
+import src.tools.web_search
+import src.tools.file_read
+import src.tools.file_write
+import src.tools.bash
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+# logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Initialize Host Agent
-fred_agent = ToolAgent(
-    TextConfig(
-        agent_key="fred",
-        model="gpt-4-1106-preview",
-        budget_dollars=5.0,
-        available_functions=["calculate", "action", "plan"],
-        system_message="\n".join(
-            [
-                "You act as the simulated brain functions of a human being, taking discrete actions based on your perceptions and internal thoughts.",
-                "After processing the current perceptions and given working memory set, you make an brief internal plan first, and then proceed to act on it.",
-                "All the plans/actions you make are queued up and executed in order. Once finished, reply with a simple 'done' message.",
-                "Make sure to specify the concrete details about actions or thoughts, and avoid vague or abstract statements.",
-                "Limit your action count to 2-3 per turn before sending the 'done' message.",
-            ]
+def main():
+    # Initialize Collection for this Agent
+    client = chromadb.PersistentClient(path="/tmp/chroma_db")
+    collection = client.get_or_create_collection(name="coder_db")
+    logging.info(f"Collection Loaded: {collection.count()} documents")
+
+    # Initialize the Agent
+    code_agent = ToolAgent(
+        TextConfig(
+            agent_key="coder",
+            model="gpt-4-1106-preview",
+            budget_dollars=5.0,
+            available_functions=[
+                "asteval",
+                "memory_save",
+                "memory_query",
+                "memory_delete",
+                "web_search",
+                "file_read",
+                "file_write",
+                "bash",
+            ],
+            system_message=" ".join(
+                [
+                    "You are a helpful assistant! You help with coding, planning, and calculations.",
+                    "As a self-improving AI, You continually integrate feedback and save memories to provide more accurate, relevant, and valuable assistance over time.",
+                    "IMPORTANT: You call memory_query frequently to fill in gaps in your current approach to solving a task.",
+                    "You pro-actively call memory_save whenever you solve a novel problem or receive feedback.",
+                ]
+            ),
+            kwargs={},
         ),
-        kwargs={},
-    ),
-    ObjectConfig(
-        agent_id=f"agent_fred", agent_service=FileBasedContext()
-    ),
-)
-
-# Initialize the World Simulator Agent
-world_simulator_agent = ToolAgent(
-    TextConfig(
-        agent_key="worldsim",
-        model="gpt-4-1106-preview",
-        budget_dollars=5.0,
-        available_functions=["calculate", "world_change", "perception_update"],
-        system_message="\n".join(
-            [
-                "You act as the simulated environment of the real world, providing changes based on a setting and list of events.",
-                "You will quickly detail how the world/environment changes in response to a series of actions/events, and then proceed to update the perception object for each relevant actor.",
-                "The perceptions you update should be specific and concrete, detailing proper nouns and vivid direct experiences."
-                "Once you are done updating perceptions, reply with a simple 'done' message.",
-            ]
+        ObjectConfig(
+            agent_id=f"c004",
+            agent_service=FileBasedContext(),
+            chroma_db_collection=collection,
         ),
-        kwargs={},
-    ),
-    ObjectConfig(
-        agent_id=f"agent_worldsim", agent_service=FileBasedContext()
-    ),
-)
+    )
 
-# Starting scenario
-world_simulator_input = [{"role": "user", "content": "Fred arrives at a busy cafe for dinner."}]
-
-try:
+    # Loop for interaction
     while True:
-        # Step 1: World Simulator updates the environment and perceptions
-        world_simulator_response = world_simulator_agent.run(world_simulator_input)
-        logger.info(f"Response from World Simulator:\n{world_simulator_response}")
+        # Get the current running cost
+        current_cost = code_agent.get_running_cost()
+        logger.info(
+            f"Current cost: ${current_cost:.2f} out of ${code_agent.text_config.budget_dollars:.2f}"
+        )
 
-        # Read updated perceptions from file
-        with open(f"tmp/{fred_agent.agent_key}_perceptions.json", "r") as file:
-            updated_perceptions = json.load(file)
-            logger.info(f"Updated perceptions: {updated_perceptions}")
+        # Check if budget exceeded
+        if current_cost >= code_agent.text_config.budget_dollars:
+            user_choice = (
+                input("Budget exceeded. Add more budget (Y/N) or type 'exit' to stop: ")
+                .strip()
+                .lower()
+            )
+            if user_choice == "y":
+                try:
+                    additional_budget = float(input("Pay down budget: $"))
+                    code_agent.add_budget(additional_budget)
+                except ValueError:
+                    logger.error("Invalid budget amount. Please enter a numeric value.")
+            elif user_choice == "exit":
+                logger.info(f"Exiting...")
+                break
+            else:
+                logger.error(
+                    "Invalid input. Please enter 'Y' to add budget, or 'exit' to stop."
+                )
+        else:
+            # Ask the user for their question/input
+            user_input = input("Enter your question or command: ")
 
-        # Step 2: Run joe_agent with updated perceptions
-        joe_response = fred_agent.run([{"role": "user", "content": "Process current perceptions and decide on appropriate actions. Perceptions: " + json.dumps(updated_perceptions)}])
-        logger.info(f"Response from Host:\n{joe_response}")
+            # Check if the user wants to exit
+            if user_input.lower() == "exit":
+                logger.info(f"Exiting...")
+                break
 
-        # Read actions from file
-        with open(f"tmp/{fred_agent.agent_key}_actions.txt", "r") as file:
-            actions_taken = file.readlines()
+            logger.info(f"Thinking...")
 
-        # Clear the actions file after reading
-        open(f"tmp/{fred_agent.agent_key}_actions.txt", "w").close()
+            # Resume agent execution with the user's input
+            response = code_agent.run(
+                input_messages=[{"role": "user", "content": user_input}],
+                system_message_override=f"{code_agent.text_config.system_message}\n Current Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+            if response and response.get("status") == "success":
+                logger.info(f"Agent response:\n{response.get('output')}\n")
+            elif response and response.get("status") == "error":
+                logger.error(f"Error:\n{response.get('error')}\n")
+                break
 
-        # Step 3: Feed actions back to the world simulator as input
-        logger.info(f"Actions taken by Joe:\n{actions_taken}")
-        world_simulator_input = [{"role": "user", "content": action} for action in actions_taken]
 
-        # Wait for user input to continue or exit
-        user_input = input("Press Enter to continue the simulation or type 'exit' to end: ")
-        if user_input.lower() == 'exit':
-            break
-
-except Exception as e:
-    logger.error(f"Error running ToolAgent: {e}")
+if __name__ == "__main__":
+    main()

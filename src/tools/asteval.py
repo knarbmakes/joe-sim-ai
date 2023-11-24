@@ -2,30 +2,31 @@ import json
 import logging
 from src.core.base_tool import BaseTool
 from src.core.tool_registry import register_fn
+from asteval import Interpreter
 
-# Configure logger for the WorldChange class
+# Configure logger for the Calculator class
 logger = logging.getLogger(__name__)
 
 @register_fn
-class WorldChange(BaseTool):
+class AstEval(BaseTool):
     @classmethod
     def get_name(cls) -> str:
-        return "world_change"
+        return "asteval"
     
     @classmethod
     def get_definition(cls, agent_self: dict) -> dict:
         return {
             "name": cls.get_name(),
-            "description": "Details how the world changes as a high-level plan. Should be called only once per turn.",
+            "description": "Evaluate an expression using Python asteval.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "change": {
+                    "expression": {
                         "type": "string",
-                        "description": "Description of how the world changes."
+                        "description": "Expression to evaluate."
                     }
                 },
-                "required": ["change"]
+                "required": ["expression"]
             }
         }
     
@@ -35,14 +36,15 @@ class WorldChange(BaseTool):
         if validation_error:
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})
         
-        change = args['change']
+        expression = args['expression']
 
-        world_change_statement = f"World Change: {change}"
+        # Use asteval for safe evaluation
+        safe_eval = Interpreter()
+        try:
+            result = safe_eval(expression)
+        except Exception as e:
+            logger.error(f"Error in evaluating expression '{expression}': {e}")
+            return json.dumps({"error": str(e)})
 
-        # Log and append to file
-        logger.info(world_change_statement)
-        with open(f"tmp/{agent_self.agent_key}_world_changes.txt", "a+") as file:
-            file.write(world_change_statement + "\n")
-
-        return json.dumps({"result": "world change processed"})
-
+        logger.info(f"Calculator: {expression} = {result}")
+        return json.dumps({"result": result})
