@@ -2,7 +2,7 @@ import json
 from src.core.base_tool import BaseTool
 from src.core.tool_registry import register_fn
 
-MAX_FILE_SIZE = 5000
+MAX_FILE_SIZE = 5000  # Maximum characters to output
 
 @register_fn
 class FileRead(BaseTool):
@@ -15,7 +15,7 @@ class FileRead(BaseTool):
     def get_definition(cls, agent_self: dict) -> dict:
         return {
             "name": cls.get_name(),
-            "description": f"Reads contents from a file. Reads at most {MAX_FILE_SIZE} characters.",
+            "description": "Reads contents from a file, providing details for continuation if the content is truncated due to size limits.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -23,13 +23,9 @@ class FileRead(BaseTool):
                         "type": "string",
                         "description": "The filename of the file to read"
                     },
-                    "line": {
+                    "cursor": {
                         "type": "number",
-                        "description": "The line number to start reading from (optional)"
-                    },
-                    "column": {
-                        "type": "number",
-                        "description": "The column number to start reading from (optional)"
+                        "description": "The cursor position to start reading from (optional)"
                     }
                 },
                 "required": ["filename"]
@@ -43,32 +39,33 @@ class FileRead(BaseTool):
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})
 
         filename = args["filename"]
-        line_number = args.get("line")
-        column_number = args.get("column")
+        cursor = args.get("cursor", 0)
 
         try:
             with open(filename, 'r', encoding='utf-8') as file:
-                read_content = ''
-                for current_line, content in enumerate(file, start=1):
-                    if line_number is None or current_line >= line_number:
-                        if current_line == line_number and column_number is not None:
-                            content = content[column_number:]
+                file.seek(0,2)  # Move to the end of the file
+                eof = file.tell()  # Get the position (char count)
 
-                        read_content += content
-                        if len(read_content) >= MAX_FILE_SIZE:
-                            read_content = read_content[:MAX_FILE_SIZE]
-                            break
+                file.seek(cursor)  # Set cursor to the required position
+                content = file.read(MAX_FILE_SIZE)
 
-                if line_number is not None and read_content == '':
-                    return json.dumps({"error": "Specified line number not found"})
+                final_cursor = file.tell()  # The new cursor position after reading
+                truncated = final_cursor < eof  # Check if we reached the end of file
 
-            return json.dumps({
-                "filename": filename,
-                "content": read_content
-            })
+                # Construct the continuation hints
+                continuation = {
+                    "final_cursor": final_cursor,  # Updating to final_cursor
+                    "eof": eof,
+                    "truncated": truncated
+                }
+
+                return json.dumps({
+                    "filename": filename,
+                    "content": content,
+                    "continuation": continuation
+                })
 
         except FileNotFoundError:
-            return json.dumps({"error": f"File not found: {filename}"})
+            return json.dumps({"error": "File not found: {filename}"})
         except IOError as e:
             return json.dumps({"error": f"Error reading file: {str(e)}"})
-
