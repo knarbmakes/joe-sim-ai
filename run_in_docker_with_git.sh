@@ -17,6 +17,7 @@ SSH_PUB_KEY_PATH="$HOME/.ssh/id_ed25519_knarb.pub"
 
 # Path to the .env file on the host machine
 ENV_FILE_PATH="$PWD/src/.env"
+MEMORY_PATH="$PWD/memory"
 
 # Check if the Docker image already exists
 if [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
@@ -33,6 +34,7 @@ fi
 docker run -it \
   -v $SSH_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb \
   -v $SSH_PUB_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb.pub \
+  -v $MEMORY_PATH:/home/$USERNAME/memory \
   -v $ENV_FILE_PATH:/home/$USERNAME/tmp/.env \
   -v $HOME/.ssh/config_docker:/home/$USERNAME/.ssh/config \
   -w "/home/$USERNAME" \

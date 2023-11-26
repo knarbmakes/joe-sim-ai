@@ -61,12 +61,12 @@ def handle_verification_agent(
 
 def main():
     # Initialize Collection for this Agent
-    client = chromadb.PersistentClient(path="tmp/chroma_db")
+    client = chromadb.PersistentClient(path="memory/chroma_db")
     collection = client.get_or_create_collection(name="coder_db")
     logging.info(f"Collection Loaded: {collection.count()} documents")
 
     # Initialize Bank Account
-    bank_account = FileBasedBankAccount(account_id="ba001", folder="tmp/bank_account")
+    bank_account = FileBasedBankAccount(account_id="ba001", folder="memory/bank_account")
 
     function_list = [
         "asteval",
@@ -99,7 +99,7 @@ def main():
         ),
         ObjectConfig(
             agent_id=f"aa001",
-            agent_service=FileBasedContext(agent_id="aa001", folder="tmp/context"),
+            agent_service=FileBasedContext(agent_id="aa001", folder="memory/context"),
             bank_account=bank_account,
             chroma_db_collection=collection,
         ),
@@ -126,7 +126,7 @@ def main():
         ),
         ObjectConfig(
             agent_id=f"va001",
-            agent_service=FileBasedContext(agent_id="va001", folder="tmp/context"),
+            agent_service=FileBasedContext(agent_id="va001", folder="memory/context"),
             bank_account=bank_account,
             chroma_db_collection=collection,
         ),

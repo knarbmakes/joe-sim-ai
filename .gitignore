@@ -9,3 +9,4 @@ __pycache__
 /src/.env
 /src/myenv
 /src/ftmp
+/memory
