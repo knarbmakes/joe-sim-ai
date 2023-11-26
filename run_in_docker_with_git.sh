@@ -39,7 +39,7 @@ fi
 docker run -it \
   -v $SSH_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb \
   -v $SSH_PUB_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb.pub \
-  -v $ENV_FILE_PATH:/home/$USERNAME/src/.env \
+  -v $ENV_FILE_PATH:/home/$USERNAME/joe-sim-ai/src/.env \
   -w "/home/$USERNAME" \
   $IMAGE_NAME \
   /bin/bash -c "\
