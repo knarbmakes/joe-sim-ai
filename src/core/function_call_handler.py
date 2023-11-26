@@ -3,7 +3,7 @@ import concurrent.futures
 import logging
 import traceback
 
-from src.core.tool_registry import ToolRegistry
+from core.tool_registry import ToolRegistry
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -37,7 +37,6 @@ class FunctionCallHandler:
         """
         content = json.dumps({"error": response}) if is_error else response
         self.agent_service.update_context_memory(
-            self.agent_id,
             [
                 {
                     "tool_call_id": tool_call["id"],

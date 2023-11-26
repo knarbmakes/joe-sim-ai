@@ -7,10 +7,10 @@ from datetime import datetime
 class FileBasedBankAccount:
     _lock = threading.Lock()
 
-    def __init__(self, account_id: str):
+    def __init__(self, account_id: str, folder: str):
         self.account_id = account_id
-        self.file_path = f"tmp/{account_id}_bank_account.json"
-        self.transaction_log_path = f"tmp/{account_id}_transactions.log"
+        self.file_path = f"{folder}/{account_id}_bank_account.json"
+        self.transaction_log_path = f"{folder}/{account_id}_transactions.log"
         self._ensure_account_file()
         self._ensure_transaction_log_file()
 

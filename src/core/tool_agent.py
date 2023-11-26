@@ -5,18 +5,19 @@ import traceback
 import logging
 
 from dotenv import load_dotenv
-from src.core.function_call_handler import FunctionCallHandler
-from src.core.message_stack_builder import MessageStackBuilder
-from src.core.cost_helper import (
+from core.function_call_handler import FunctionCallHandler
+from core.message_stack_builder import MessageStackBuilder
+from core.cost_helper import (
     calculate_cost,
 )
-from src.core.tool_registry import ToolRegistry
+from core.tool_registry import ToolRegistry
 from typing import NamedTuple, Dict, Any, Optional
 from datetime import datetime
 import concurrent.futures
 
 # Configure logging
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 load_dotenv()
 openai_client = openai.OpenAI(
@@ -78,9 +79,7 @@ class ToolAgent:
 
             # Update context memory with input messages if any, before starting the loop
             if input_messages:
-                self.agent_service.update_context_memory(
-                    self.object_config.agent_id, memory_elements=input_messages
-                )
+                self.agent_service.update_context_memory(memory_elements=input_messages)
 
             # Loop until we stop getting function calls or we exceed the budget.
             while True:
@@ -138,7 +137,6 @@ class ToolAgent:
 
                     # Update context memory with serializable tool calls
                     self.agent_service.update_context_memory(
-                        self.object_config.agent_id,
                         [
                             {
                                 "role": "assistant",
@@ -152,9 +150,7 @@ class ToolAgent:
                     self.function_call_handler.handle_fn_calls(tool_calls_serializable)
                 else:
                     # Save the output to context memory and return.
-                    self.agent_service.update_context_memory(
-                        self.object_config.agent_id,
-                        [{"role": "assistant", "content": output.get("content")}],
+                    self.agent_service.update_context_memory([{"role": "assistant", "content": output.get("content")}],
                     )
                     return {"status": "success", "output": output.get("content")}
         except Exception as e:

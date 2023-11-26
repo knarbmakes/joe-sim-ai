@@ -1,6 +1,6 @@
 import json
 import logging
-from src.core.cost_helper import get_context_window, num_tokens_from_message, num_tokens_from_string
+from core.cost_helper import get_context_window, num_tokens_from_message, num_tokens_from_string
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +27,7 @@ class MessageStackBuilder:
 
         # Get the latest context memory.
         chat_history = (
-            self.agent_service.update_context_memory(
-                self.agent_id, memory_elements=[]
-            )
+            self.agent_service.update_context_memory(memory_elements=[])
             or []
         )
 
@@ -58,7 +56,6 @@ class MessageStackBuilder:
         # Pop the messages from the database as well so we don't keep growing the list infinitely.
         if final_count < len(chat_history):
             self.agent_service.update_context_memory(
-                self.agent_id,
                 memory_elements=None,
                 final_count=final_count,
             )

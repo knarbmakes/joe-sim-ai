@@ -2,8 +2,8 @@ import json
 import logging
 import traceback
 import chromadb
-from src.core.base_tool import BaseTool
-from src.core.tool_registry import register_fn
+from core.base_tool import BaseTool
+from core.tool_registry import register_fn
 
 # Configure logger for the QueryMemories class
 logger = logging.getLogger(__name__)

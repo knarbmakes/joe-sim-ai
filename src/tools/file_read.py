@@ -1,6 +1,6 @@
 import json
-from src.core.base_tool import BaseTool
-from src.core.tool_registry import register_fn
+from core.base_tool import BaseTool
+from core.tool_registry import register_fn
 
 MAX_FILE_SIZE = 5000  # Maximum characters to output
 
