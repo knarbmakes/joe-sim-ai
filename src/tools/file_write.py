@@ -1,8 +1,8 @@
 import json
 import os
 import stat
-from src.core.base_tool import BaseTool
-from src.core.tool_registry import register_fn
+from core.base_tool import BaseTool
+from core.tool_registry import register_fn
 
 @register_fn
 class FileWrite(BaseTool):
@@ -26,10 +26,6 @@ class FileWrite(BaseTool):
                     "contents": {
                         "type": "string",
                         "description": "The contents to write to the file"
-                    },
-                    "permissions": {
-                        "type": "number",
-                        "description": "The chmod permissions to set for the file (optional)"
                     }
                 },
                 "required": ["filepath", "contents"]
@@ -45,7 +41,6 @@ class FileWrite(BaseTool):
         try:
             filepath = args["filepath"]
             contents = args["contents"]
-            permissions = args.get("permissions")
 
             dir_path = os.path.dirname(filepath)
             if dir_path:
@@ -53,10 +48,6 @@ class FileWrite(BaseTool):
 
             with open(filepath, 'w', encoding='utf-8') as file:
                 file.write(contents)
-
-            # Set file permissions if specified
-            if permissions is not None:
-                os.chmod(filepath, permissions)
 
             return json.dumps({"message": f"File written successfully at {filepath}"})
 

@@ -3,3 +3,9 @@
 /start.sh
 /tmp
 __pycache__
+/downloads
+/src/tmp
+/src/venv
+/src/.env
+/src/myenv
+/src/ftmp

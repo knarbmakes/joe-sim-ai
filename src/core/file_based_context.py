@@ -2,10 +2,14 @@ import json
 import os
 from typing import List, Dict
 
+
 class FileBasedContext:
-    @staticmethod
-    def update_context_memory(agent_id: str, memory_elements: List[Dict], final_count: int = 0):
-        file_path = f"tmp/{agent_id}_context_memory.json"
+    def __init__(self, agent_id: str, folder: str):
+        self.folder = folder
+        self.agent_id = agent_id
+
+    def update_context_memory(self, memory_elements: List[Dict], final_count: int = 0):
+        file_path = f"{self.folder}/{self.agent_id}_context_memory.json"
         context_memory = []
 
         # Ensure the tmp directory exists
@@ -13,7 +17,7 @@ class FileBasedContext:
 
         # Read existing context memory
         if os.path.exists(file_path):
-            with open(file_path, 'r') as file:
+            with open(file_path, "r") as file:
                 context_memory = json.load(file)
 
         # Update context memory
@@ -25,7 +29,7 @@ class FileBasedContext:
             context_memory = context_memory[-final_count:]
 
         # Write updated context memory back to file
-        with open(file_path, 'w') as file:
+        with open(file_path, "w") as file:
             json.dump(context_memory, file, indent=2)
 
         return context_memory

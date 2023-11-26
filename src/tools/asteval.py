@@ -1,7 +1,7 @@
 import json
 import logging
-from src.core.base_tool import BaseTool
-from src.core.tool_registry import register_fn
+from core.base_tool import BaseTool
+from core.tool_registry import register_fn
 from asteval import Interpreter
 
 # Configure logger for the Calculator class

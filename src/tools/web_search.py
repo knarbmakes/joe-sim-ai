@@ -2,8 +2,8 @@ import json
 import os
 import requests
 from dotenv import load_dotenv
-from src.core.base_tool import BaseTool
-from src.core.tool_registry import register_fn
+from core.base_tool import BaseTool
+from core.tool_registry import register_fn
 
 @register_fn
 class WebSearch(BaseTool):

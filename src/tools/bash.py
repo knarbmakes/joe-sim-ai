@@ -1,11 +1,11 @@
 import json
 import subprocess
 import time
-from src.core.base_tool import BaseTool
-from src.core.tool_registry import register_fn
+from core.base_tool import BaseTool
+from core.tool_registry import register_fn
 
 MAX_OUTPUT_LENGTH = 5000  # Maximum characters to output
-COMMAND_TIMEOUT = 10     # Timeout for command execution in seconds
+COMMAND_TIMEOUT = 60     # Timeout for command execution in seconds
 
 @register_fn
 class RunBashCommand(BaseTool):
@@ -58,7 +58,7 @@ class RunBashCommand(BaseTool):
             })
 
         except subprocess.TimeoutExpired:
-            return json.dumps({"error": "Command timed out"})
+            return json.dumps({"error": "Command timed out in {COMMAND_TIMEOUT}s."})
         except subprocess.CalledProcessError as e:
             stderr_tail = e.stderr[-MAX_OUTPUT_LENGTH:] if len(e.stderr) > MAX_OUTPUT_LENGTH else e.stderr
             return json.dumps({"error": f"Command failed: {stderr_tail}"})
