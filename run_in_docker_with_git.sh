@@ -22,7 +22,7 @@ ENV_FILE_PATH="$PWD/src/.env"
 if [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
   # Build the Docker image with user creation
   docker build -t $IMAGE_NAME -f- . <<EOF
-FROM maniator/gh
+FROM debian:stable-slim
 RUN apt-get update && apt-get install -y python3 python3-pip python3-venv git openssh-client
 RUN python3 -m venv /venv
 RUN useradd -m $USERNAME
