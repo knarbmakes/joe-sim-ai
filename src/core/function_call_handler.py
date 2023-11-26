@@ -2,6 +2,7 @@ import json
 import concurrent.futures
 import logging
 import traceback
+from threading import Lock
 
 from core.tool_registry import ToolRegistry
 
@@ -22,6 +23,8 @@ class FunctionCallHandler:
             for name in function_names
             if name in ToolRegistry.functions
         }
+        self.log_lock = Lock()
+        self.execution_log = []
 
     def get_available_fn_defn(self):
         # If the list is empty, return None to avoid an error
@@ -70,19 +73,27 @@ class FunctionCallHandler:
             return json.dumps({"error": f"Function {function_name} not found!"})
         else:
             logger.info(f"Executing function {function_name} with args {function_args}")
-            return self.available_functions[function_name].run(function_args, self)
-
+            function_response = self.available_functions[function_name].run(function_args, self)
+            with self.log_lock:
+                self.execution_log.append((tool_call, function_response))
+            return function_response
 
     def handle_fn_calls(self, tool_calls):
         """
         Handle multiple function calls in parallel.
         """
+        # Clear the execution log
+        with self.log_lock:
+            self.execution_log = []
+
         with concurrent.futures.ThreadPoolExecutor() as executor:
+            # Dictionary for tracking correspondences
             future_to_tool_call = {
                 executor.submit(self.execute_function_call, tool_call): tool_call
                 for tool_call in tool_calls
             }
 
+            # Process return values and catch exceptions
             for future in concurrent.futures.as_completed(future_to_tool_call):
                 tool_call = future_to_tool_call[future]
                 try:
@@ -90,9 +101,8 @@ class FunctionCallHandler:
                     self.update_context_with_response(tool_call, function_response)
                 except Exception as exc:
                     traceback.print_exc()
-                    logger.warn(
-                        f"Function call {tool_call} generated an exception: {exc}"
-                    )
-                    self.update_context_with_response(
-                        tool_call, str(exc), is_error=True
-                    )
+                    logger.warn(f"Function call {tool_call} generated an exception: {exc}")
+                    self.update_context_with_response(tool_call, str(exc), is_error=True)
+
+        # Return the logged execution details
+        return self.execution_log

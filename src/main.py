@@ -34,7 +34,7 @@ def handle_answer_agent(answer_agent, user_input, sys_message_suffix, user_name)
     )
     if response and response.get("status") == "success":
         logger.info(f"Agent Response: {response.get('output')}")
-        return response.get("output")
+        return response
     return None
 
 
@@ -46,7 +46,7 @@ def handle_verification_agent(
             {
                 "role": "user",
                 "name": "answer_agent",
-                "content": f"In the context of the user's request:\n{user_input}\n\nVerify the answer:\n{answer_output}",
+                "content": f"In the context of the user's request:\n{user_input}\n\nTool Execution log:\n{answer_output.get('tool_execution_log')}\n\Read the final answer and give feedback:\n{answer_output.get('output')}\n",
             }
         ],
         sys_message_suffix=sys_message_suffix,
