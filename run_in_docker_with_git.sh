@@ -24,6 +24,12 @@ if [[ "$(docker images -q $IMAGE_NAME 2> /dev/null)" == "" ]]; then
   docker build -t $IMAGE_NAME -f- . <<EOF
 FROM debian:stable-slim
 RUN apt-get update && apt-get install -y python3 python3-pip python3-venv git openssh-client
+
+# Downloading and installing GitHub CLI
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
+RUN echo "deb [arch=$(dpkg --print-architecture)] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/gh-cli.list
+RUN apt update && apt install gh
+
 RUN python3 -m venv /venv
 RUN useradd -m $USERNAME
 EOF
@@ -33,7 +39,7 @@ fi
 docker run -it \
   -v $SSH_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb \
   -v $SSH_PUB_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb.pub \
-  -v $ENV_FILE_PATH:/home/$USERNAME/joe-sim-ai/src/.env \
+  -v $ENV_FILE_PATH:/home/$USERNAME/src/.env \
   -w "/home/$USERNAME" \
   $IMAGE_NAME \
   /bin/bash -c "\
