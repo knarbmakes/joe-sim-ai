@@ -132,8 +132,8 @@ def main():
         ),
     )
 
-    # Loop for interaction
-    max_revisions = 3
+    # Replace the existing user input prompt
+    max_revisions = 1
     revision_counter = 0
     while True:
         try:
@@ -144,10 +144,13 @@ def main():
                 logging.info("Bank account balance depleted, exiting...")
                 break
 
-            user_input = input("Enter your question or command: ")
-            if user_input.lower() == "exit":
-                logging.info("Exiting...")
-                break
+            # Input validation loop
+            while True:
+                user_input = input("Enter your question or command: ").strip()  # Use .strip() to remove whitespace from the beginning and end
+                if user_input:  # This checks that user_input is not an empty string
+                    break
+                else:
+                    print("Input cannot be empty, please try again.")
 
             sys_message_suffix = f"\n\nCurrent Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nCurrent Account Balance: ${current_balance:.2f}"
             answer_output = handle_answer_agent(
