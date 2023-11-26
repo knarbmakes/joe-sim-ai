@@ -81,6 +81,9 @@ class ToolAgent:
             if input_messages:
                 self.agent_service.update_context_memory(memory_elements=input_messages)
 
+            # Keep track of tool executions
+            tool_execution_log = []
+
             # Loop until we stop getting function calls or we exceed the budget.
             while True:
                 if not self.bank_account.get_balance() > 0:
@@ -147,12 +150,14 @@ class ToolAgent:
                     )
 
                     # Process the tool calls
-                    self.function_call_handler.handle_fn_calls(tool_calls_serializable)
+                    current_log = self.function_call_handler.handle_fn_calls(tool_calls_serializable)
+
+                    tool_execution_log.extend(current_log)
                 else:
                     # Save the output to context memory and return.
                     self.agent_service.update_context_memory([{"role": "assistant", "content": output.get("content")}],
                     )
-                    return {"status": "success", "output": output.get("content")}
+                    return {"status": "success", "output": output.get("content"), "tool_execution_log": tool_execution_log}
         except Exception as e:
             traceback.print_exc()  # Print the stack trace
             logger.exception(f"An error occurred in agent {self.agent_key}: {e}")
