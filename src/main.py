@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import traceback
+import time
 from dotenv import load_dotenv
 from core.file_based_bank_account import FileBasedBankAccount
 from core.file_based_context import FileBasedContext
@@ -18,6 +19,7 @@ import tools.web_search
 import tools.file_read
 import tools.file_write
 import tools.bash
+import tools.ask_human
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,10 +29,10 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 
-def handle_answer_agent(answer_agent, user_input, sys_message_suffix, user_name):
+def handle_task_agent(task_agent, user_input, sys_message_suffix, user_name):
     logger.info(f"Running Agent...")
-    response = answer_agent.run(
-        input_messages=[{"role": "user", "name": user_name, "content": user_input}],
+    response = task_agent.run(
+        input_messages=[{"role": "user", "name": user_name, "content": user_input}] if user_input else None,
         sys_message_suffix=sys_message_suffix,
     )
     if response and response.get("status") == "success":
@@ -40,14 +42,14 @@ def handle_answer_agent(answer_agent, user_input, sys_message_suffix, user_name)
 
 
 def handle_verification_agent(
-    verification_agent, user_input, answer_output, sys_message_suffix, user_name):
+    verification_agent, answer_output, sys_message_suffix, user_name):
     logger.info(f"Verifying answer...")
     verification_response = verification_agent.run(
         input_messages=[
             {
                 "role": "user",
-                "name": "answer_agent",
-                "content": f"In the context of the user's request:\n{user_input}\n\nTool Execution log:\n{answer_output.get('tool_execution_log')}\n\Read the final answer and give feedback:\n{answer_output.get('output')}\n",
+                "name": "task_agent",
+                "content": f"Tool Execution log:\n{answer_output.get('tool_execution_log')}\n\Read the final answer and give feedback:\n{answer_output.get('output')}\n",
             }
         ],
         sys_message_suffix=sys_message_suffix,
@@ -89,13 +91,13 @@ def load_agent_configs(config_filename, bank_account, memory_collection):
         config = json.load(file)
 
     # Config for the Answer Agent
-    answer_agent_config = create_agent_config(config['answer_agent'], "aa001", bank_account, memory_collection)
+    task_agent_config = create_agent_config(config['task_agent'], "ta002", bank_account, memory_collection)
 
     # Config for the Verification Agent
-    verifier_agent_config = create_agent_config(config['verifier_agent'], "va001", bank_account, memory_collection)
+    verifier_agent_config = create_agent_config(config['verifier_agent'], "va002", bank_account, memory_collection)
 
     return {
-        "answer_agent": answer_agent_config,
+        "task_agent": task_agent_config,
         "verifier_agent": verifier_agent_config
     }
 
@@ -110,7 +112,7 @@ def main():
     bank_account = FileBasedBankAccount(account_id="ba001", folder="memory/bank_account")
 
     configs = load_agent_configs('agent_config.json', bank_account, memory_collection)
-    answer_agent = ToolAgent(*configs['answer_agent'])
+    task_agent = ToolAgent(*configs['task_agent'])
     verification_agent = ToolAgent(*configs['verifier_agent'])
 
     # Replace the existing user input prompt
@@ -121,34 +123,29 @@ def main():
             current_balance = bank_account.get_balance()
             logging.info(f"Current balance: ${current_balance}")
 
+            # Add some delay to simulate human response time
+            time.sleep(1)
+
             if current_balance <= 0:
                 logging.info("Bank account balance depleted, exiting...")
                 break
 
-            # Input validation loop
-            while True:
-                user_input = input("Enter your question or command: ").strip()  # Use .strip() to remove whitespace from the beginning and end
-                if user_input:  # This checks that user_input is not an empty string
-                    break
-                else:
-                    print("Input cannot be empty, please try again.")
-
             sys_message_suffix = f"\n\nCurrent Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nCurrent Account Balance: ${current_balance:.2f}"
-            answer_output = handle_answer_agent(
-                answer_agent, user_input, sys_message_suffix, "end_user"
+            answer_output = handle_task_agent(
+                task_agent, None, sys_message_suffix, "end_user"
             )
 
             if answer_output:
                 revision_counter = 0
                 while revision_counter < max_revisions:
                     verification_result = handle_verification_agent(
-                        verification_agent, user_input, answer_output, sys_message_suffix, "answer_agent"
+                        verification_agent, answer_output, sys_message_suffix, "task_agent"
                     )
                     if verification_result and verification_result.get("revision_required"):
                         revision_counter += 1
                         feedback_input = verification_result.get("feedback")
-                        answer_output = handle_answer_agent(
-                            answer_agent, feedback_input, sys_message_suffix, "verifier"
+                        answer_output = handle_task_agent(
+                            task_agent, feedback_input, sys_message_suffix, "verifier"
                         )
                     else:
                         logging.info("No revision required, verification successful.")
