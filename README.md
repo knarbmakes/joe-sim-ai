@@ -1,6 +1,6 @@
 Joe Python Agent
 
-## Updated Overview
+## Overview
 
 Joe Python Agent is an autonomous, self-improving agent designed to assist with coding, documentation, planning, calculations, and file management tasks. It features a suite of tools for web scraping, file operations, system command execution, and interacting with a human for guidance on complex problems.
 
