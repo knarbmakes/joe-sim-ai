@@ -4,9 +4,6 @@ from core.base_tool import BaseTool
 from core.tool_registry import register_fn
 from asteval import Interpreter
 
-# Configure logger for the Calculator class
-logger = logging.getLogger(__name__)
-
 @register_fn
 class AstEval(BaseTool):
     @classmethod
@@ -43,8 +40,10 @@ class AstEval(BaseTool):
         try:
             result = safe_eval(expression)
         except Exception as e:
-            logger.error(f"Error in evaluating expression '{expression}': {e}")
             return json.dumps({"error": str(e)})
 
-        logger.info(f"Calculator: {expression} = {result}")
+        if result is None:
+            return json.dumps({"error": "Invalid expression"})
+
         return json.dumps({"result": result})
+

@@ -149,9 +149,12 @@ class ToolAgent:
                         ],
                     )
 
+                    # Log the content, if any.
+                    if output.get("content"):
+                        logger.info(f"Intermediate Response:\n{output.get('content')}")
+
                     # Process the tool calls
                     current_log = self.function_call_handler.handle_fn_calls(tool_calls_serializable)
-
                     tool_execution_log.extend(current_log)
                 else:
                     # Save the output to context memory and return.

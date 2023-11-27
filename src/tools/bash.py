@@ -5,6 +5,7 @@ from core.base_tool import BaseTool
 from core.tool_registry import register_fn
 
 MAX_OUTPUT_LENGTH = 5000  # Maximum characters to output
+MAX_INPUT_LENGTH = 2000  # Maximum characters to input
 COMMAND_TIMEOUT = 60     # Timeout for command execution in seconds
 
 @register_fn
@@ -18,13 +19,13 @@ class RunBashCommand(BaseTool):
     def get_definition(cls, agent_self: dict) -> dict:
         return {
             "name": cls.get_name(),
-            "description": "Executes a specified bash command within a timeout and returns its output, limiting the output to the last 5000 characters.",
+            "description": f"Executes a specified bash command within a timeout and returns its output, limiting the output to the last {MAX_OUTPUT_LENGTH} characters.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": "The bash command to execute. Please ensure the command is concise, as there is a maximum length of 500 characters enforced for security and performance reasons."
+                        "description": f"The bash command to execute. Please ensure the command is concise, as there is a maximum length of {MAX_INPUT_LENGTH} characters enforced for security and performance reasons."
                     }
                 },
                 "required": ["command"]
@@ -38,8 +39,8 @@ class RunBashCommand(BaseTool):
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})
 
         command = args["command"]
-        if len(command) > 500:
-            return json.dumps({"error": "Command exceeds the maximum length of 500 characters."})
+        if len(command) > MAX_INPUT_LENGTH:
+            return json.dumps({"error": f"Command exceeds the maximum length of {MAX_INPUT_LENGTH} characters."})
 
         try:
             t0 = time.time()
