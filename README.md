@@ -1,36 +1,49 @@
-# Joe Python Agent
+Joe Python Agent
 
-## Overview
+## Updated Overview
 
-This repository contains the Joe Python Agent, which is designed to assist with coding, planning, and calculations. The agent integrates with a collection of tools and communicates with ChromaDB for long-term memory storage and retrieval.
+Joe Python Agent is an autonomous, self-improving agent designed to assist with coding, documentation, planning, calculations, and file management tasks. It features a suite of tools for web scraping, file operations, system command execution, and interacting with a human for guidance on complex problems.
 
 ## Features
 
-- Evaluate expressions with Python asteval
-- Save and retrieve long-term memories with ChromaDB
-- Perform web searches and scrape websites
-- Execute system commands via bash
+- Evaluate Python expressions and execute code snippets with a secure evaluation environment (asteval).
+- Query, save, and delete long-term memories using ChromaDB with a focus on context-preserving interactions.
+- An autonomous verification system that ensures quality and accuracy of its operations and outputs.
+- A robust bank account balance and quota management system for managing operational costs.
+- A flexible communication system that allows for verification and feedback loops, improving the agent decisions over time.
 
 ## Installation
 
-Clone the repository and navigate to the directory.
-Run the start script to set up the environment (assumes Python 3.x is installed):
+Ensure you have Python 3.x and the required pip packages installed:
 
-```bash
-./start.sh
+```
+python -m pip install -r requirements.txt
 ```
 
 ## Usage
 
-Run the main Python script:
+- Start the agent by running the main script:
 
-```bash
-python joe.py
+```
+python src/main.py
 ```
 
-Follow the prompts to interact with the Joe Python Agent.
+- Utilize individual tools by accessing the `/tools/` directory.
+- Extend agent capabilities by adding new tools and commands into the `/src/tools/` directory.
+
+## Scripts
+
+Auxiliary scripts for specific tasks (e.g., document conversion, news digestion, stock price fetching) are included in the `/scripts/` directory.
+
+## Testing
+
+- Run unit tests with the following command to ensure integrity before making changes:
+
+```
+python src/run_tests.py
+```
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
+The project is open source and available under the [MIT License](LICENSE).
 
