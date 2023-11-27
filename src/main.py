@@ -113,11 +113,7 @@ def main():
 
     configs = load_agent_configs('agent_config.json', bank_account, memory_collection)
     task_agent = ToolAgent(*configs['task_agent'])
-    verification_agent = ToolAgent(*configs['verifier_agent'])
 
-    # Replace the existing user input prompt
-    max_revisions = 1
-    revision_counter = 0
     while True:
         try:
             current_balance = bank_account.get_balance()
@@ -134,25 +130,6 @@ def main():
             answer_output = handle_task_agent(
                 task_agent, None, sys_message_suffix, "end_user"
             )
-
-            if answer_output:
-                revision_counter = 0
-                while revision_counter < max_revisions:
-                    verification_result = handle_verification_agent(
-                        verification_agent, answer_output, sys_message_suffix, "task_agent"
-                    )
-                    if verification_result and verification_result.get("revision_required"):
-                        revision_counter += 1
-                        feedback_input = verification_result.get("feedback")
-                        answer_output = handle_task_agent(
-                            task_agent, feedback_input, sys_message_suffix, "verifier"
-                        )
-                    else:
-                        logging.info("No revision required, verification successful.")
-                        break
-
-                if revision_counter >= max_revisions:
-                    logging.info("Maximum revisions reached.")
         except Exception as e:
             traceback.print_exc()
             logging.error(f"Error: {e}")
