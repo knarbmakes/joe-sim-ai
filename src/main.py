@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import traceback
 from dotenv import load_dotenv
 from core.file_based_bank_account import FileBasedBankAccount
@@ -77,8 +78,14 @@ def create_agent_config(agent_config, agent_id, bank_account, memory_collection)
     return text_config, object_config
 
 
-def load_agent_configs(config_json, bank_account, memory_collection):
-    with open(config_json, 'r') as file:
+def load_agent_configs(config_filename, bank_account, memory_collection):
+    # Get the directory of the current script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Construct the full path to the config file
+    config_path = os.path.join(script_dir, config_filename)
+
+    with open(config_path, 'r') as file:
         config = json.load(file)
 
     # Config for the Answer Agent
