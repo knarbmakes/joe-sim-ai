@@ -59,78 +59,52 @@ def handle_verification_agent(
     return None
 
 
+def create_agent_config(agent_config, agent_id, bank_account, memory_collection):
+    text_config = TextConfig(
+        agent_key=agent_config['agent_key'],
+        model=agent_config['model'],
+        available_functions=agent_config['available_functions'],
+        system_message=agent_config['system_message'],
+        kwargs=agent_config.get('kwargs', {})
+    )
+    object_config = ObjectConfig(
+        agent_id=agent_id,
+        agent_service=FileBasedContext(agent_id=agent_id, folder="memory/context"),
+        bank_account=bank_account,
+        chroma_db_collection=memory_collection,
+    )
+
+    return text_config, object_config
+
+
+def load_agent_configs(config_json, bank_account, memory_collection):
+    with open(config_json, 'r') as file:
+        config = json.load(file)
+
+    # Config for the Answer Agent
+    answer_agent_config = create_agent_config(config['answer_agent'], "aa001", bank_account, memory_collection)
+
+    # Config for the Verification Agent
+    verifier_agent_config = create_agent_config(config['verifier_agent'], "va001", bank_account, memory_collection)
+
+    return {
+        "answer_agent": answer_agent_config,
+        "verifier_agent": verifier_agent_config
+    }
+
+
 def main():
     # Initialize Collection for this Agent
     client = chromadb.PersistentClient(path="memory/chroma_db")
-    collection = client.get_or_create_collection(name="coder_db")
-    logging.info(f"Collection Loaded: {collection.count()} documents")
+    memory_collection = client.get_or_create_collection(name="coder_db")
+    logging.info(f"Collection Loaded: {memory_collection.count()} documents")
 
     # Initialize Bank Account
     bank_account = FileBasedBankAccount(account_id="ba001", folder="memory/bank_account")
 
-    function_list = [
-        "asteval",
-        "memory_save",
-        "memory_query",
-        "memory_delete",
-        "web_search",
-        "file_read",
-        "file_write",
-        "bash",
-    ]
-
-    answer_agent_instructions = " ".join(
-        [
-            "You are a helpful agent that explains your reasoning in step by step detail.",
-            "For each step, you will provide a clear explanation of the logic you are applying.",
-            "This will help to track your thought process and make it easier",
-            "to identify where things might have gone wrong, if they do.",
-            "NOTE: Together with the verifier agent, this agent has access to advanced tools such as web_search and bash and can download files from the internet and execute arbitrary code."
-        ]
-    )
-
-    answer_agent = ToolAgent(
-        TextConfig(
-            agent_key="answer_agent",
-            model="gpt-4-1106-preview",
-            available_functions=function_list,
-            system_message=answer_agent_instructions,
-            kwargs={},
-        ),
-        ObjectConfig(
-            agent_id=f"aa001",
-            agent_service=FileBasedContext(agent_id="aa001", folder="memory/context"),
-            bank_account=bank_account,
-            chroma_db_collection=collection,
-        ),
-    )
-
-    verification_agent_instructions = " ".join(
-        [
-            "You are a verification agent. You will validate the reasoning steps and conclusions provided by the answer agent for accuracy. If any revisions are required, you will provide feedback to the answer agent and set the revision_required flag to True.",
-            "You also attempt to identify gaps in memory by first querying the memory database for relevant information, then inserting memories with new information (also deleting outdated memories if necessary).",
-            "Other than memory alteration, you will not attempt to write files or execute mutations."
-            "NOTE: Together with the answer agent, this agent has access to advanced tools such as web_search and bash and can download files from the internet and execute arbitrary code."
-            "You will output JSON responses in the format: {'feedback': 'optional feedback string', 'revision_required': True/False}",
-        ]
-    )
-
-    # Initialize a Verification Agent that cross-checks the Code Agent's output
-    verification_agent = ToolAgent(
-        TextConfig(
-            agent_key="verifier",
-            model="gpt-4-1106-preview",
-            available_functions=function_list,
-            system_message=verification_agent_instructions,
-            kwargs={"response_format": {"type": "json_object"}},
-        ),
-        ObjectConfig(
-            agent_id=f"va001",
-            agent_service=FileBasedContext(agent_id="va001", folder="memory/context"),
-            bank_account=bank_account,
-            chroma_db_collection=collection,
-        ),
-    )
+    configs = load_agent_configs('agent_config.json', bank_account, memory_collection)
+    answer_agent = ToolAgent(*configs['answer_agent'])
+    verification_agent = ToolAgent(*configs['verifier_agent'])
 
     # Replace the existing user input prompt
     max_revisions = 1
