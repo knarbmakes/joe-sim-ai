@@ -97,9 +97,8 @@ class ToolAgent:
 
                 # Check if the last message is a tool_call and skip completion if so
                 if messages and "tool_calls" in messages[-1] and messages[-1]["tool_calls"]:
-                    tool_calls_serializable = [
-                        tool_call.dict() for tool_call in messages[-1]["tool_calls"]
-                    ]
+                    # Directly use the tool_calls as they are already in dictionary format
+                    tool_calls_serializable = messages[-1]["tool_calls"]
                     current_log = self.function_call_handler.handle_fn_calls(tool_calls_serializable)
                     tool_execution_log.extend(current_log)
                     continue
