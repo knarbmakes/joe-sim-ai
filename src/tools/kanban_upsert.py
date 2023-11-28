@@ -53,11 +53,11 @@ class KanbanUpsert(BaseTool):
 
         try:
             id = args.get('id', None)
-            name = args['name']
-            description = args['description']
-            stage = Stage(args['stage'])
+            name = args.get('name', None)
+            description = args.get('description', None)
+            stage = args.get('stage', None)
             kanban_board = agent_self.object_config.kanban_board
-            kanban_board.upsert_card(name, description, stage, id)
+            kanban_board.upsert_card(name=name, description=description, stage=Stage(stage), card_id=id)
         except Exception as e:
             traceback.print_exc()
             logger.error(f"Error in upserting Kanban card: {e}")
