@@ -33,10 +33,12 @@ logger.setLevel(logging.INFO)
 load_dotenv()
 
 
-def handle_task_agent(task_agent, user_input, sys_message_suffix, user_name):
-    logger.info(f"Running Agent...")
+def run_agent(task_agent, user_input, sys_message_suffix, user_name):
+    logger.info(f"Running Agent {task_agent.agent_key}...")
     response = task_agent.run(
-        input_messages=[{"role": "user", "name": user_name, "content": user_input}] if user_input else None,
+        input_messages=[{"role": "user", "name": user_name, "content": user_input}]
+        if user_input
+        else None,
         sys_message_suffix=sys_message_suffix,
     )
     if response and response.get("status") == "success":
@@ -45,41 +47,22 @@ def handle_task_agent(task_agent, user_input, sys_message_suffix, user_name):
     return None
 
 
-def handle_verification_agent(
-    verification_agent, answer_output, sys_message_suffix, user_name):
-    logger.info(f"Verifying answer...")
-    verification_response = verification_agent.run(
-        input_messages=[
-            {
-                "role": "user",
-                "name": "task_agent",
-                "content": f"Tool Execution log:\n{answer_output.get('tool_execution_log')}\n\Read the final answer and give feedback:\n{answer_output.get('output')}\n",
-            }
-        ],
-        sys_message_suffix=sys_message_suffix,
-    )
-    if verification_response and verification_response.get("status") == "success":
-        # Parse the output as a JSON string
-        parsed = json.loads(verification_response.get("output"))
-        logger.info(f"Agent Response: {parsed}")
-        return parsed
-    return None
-
-
-def create_agent_config(agent_config, agent_id, bank_account, memory_collection, kanban):
+def create_agent_config(
+    agent_config, agent_id, bank_account, memory_collection, kanban
+):
     text_config = TextConfig(
-        agent_key=agent_config['agent_key'],
-        model=agent_config['model'],
-        available_functions=agent_config['available_functions'],
-        system_message=agent_config['system_message'],
-        kwargs=agent_config.get('kwargs', {})
+        agent_key=agent_config["agent_key"],
+        model=agent_config["model"],
+        available_functions=agent_config["available_functions"],
+        system_message=agent_config["system_message"],
+        kwargs=agent_config.get("kwargs", {}),
     )
     object_config = ObjectConfig(
         agent_id=agent_id,
         agent_service=FileBasedContext(agent_id=agent_id, folder="memory/context"),
         bank_account=bank_account,
         chroma_db_collection=memory_collection,
-        kanban_board=kanban
+        kanban_board=kanban,
     )
 
     return text_config, object_config
@@ -92,19 +75,20 @@ def load_agent_configs(config_filename, bank_account, memory_collection, kanban)
     # Construct the full path to the config file
     config_path = os.path.join(script_dir, config_filename)
 
-    with open(config_path, 'r') as file:
+    with open(config_path, "r") as file:
         config = json.load(file)
 
     # Config for the Answer Agent
-    task_agent_config = create_agent_config(config['task_agent'], "ta002", bank_account, memory_collection, kanban)
+    task_agent_config = create_agent_config(
+        config["task_agent"], "ta002", bank_account, memory_collection, kanban
+    )
 
     # Config for the Verification Agent
-    verifier_agent_config = create_agent_config(config['verifier_agent'], "va002", bank_account, memory_collection, kanban)
+    verifier_agent_config = create_agent_config(
+        config["verifier_agent"], "va002", bank_account, memory_collection, kanban
+    )
 
-    return {
-        "task_agent": task_agent_config,
-        "verifier_agent": verifier_agent_config
-    }
+    return {"task_agent": task_agent_config, "verifier_agent": verifier_agent_config}
 
 
 def main():
@@ -117,10 +101,18 @@ def main():
     kanban = FileBasedKanbanBoard(board_id="kb1", folder="memory/kanban")
 
     # Initialize Bank Account
-    bank_account = FileBasedBankAccount(account_id="ba001", folder="memory/bank_account")
+    bank_account = FileBasedBankAccount(
+        account_id="ba001", folder="memory/bank_account"
+    )
 
-    configs = load_agent_configs('agent_config.json', bank_account, memory_collection, kanban)
-    task_agent = ToolAgent(*configs['task_agent'])
+    configs = load_agent_configs(
+        "agent_config.json", bank_account, memory_collection, kanban
+    )
+
+    task_agent = ToolAgent(*configs["task_agent"])
+    verifier_agent = ToolAgent(*configs["verifier_agent"])
+    task_agent_input = None
+    verifier_output = None
 
     while True:
         try:
@@ -135,9 +127,12 @@ def main():
                 break
 
             sys_message_suffix = f"\n\nCurrent Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nCurrent Account Balance: ${current_balance:.2f}"
-            answer_output = handle_task_agent(
-                task_agent, None, sys_message_suffix, "end_user"
-            )
+
+            task_agent_input = verifier_output.get("output") if verifier_output else None
+            answer_output = run_agent(task_agent, task_agent_input, sys_message_suffix, "verifier_agent")
+
+            input_with_tool_log = f"Task Agent execution log:\n{answer_output.get('tool_execution_log')}\n\Task Agent reply:\n{answer_output.get('output')}\n"
+            verifier_output = run_agent(verifier_agent, input_with_tool_log, sys_message_suffix, "task_agent")
         except Exception as e:
             traceback.print_exc()
             logging.error(f"Error: {e}")

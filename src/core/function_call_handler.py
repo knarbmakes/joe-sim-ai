@@ -75,7 +75,11 @@ class FunctionCallHandler:
             logger.info(f"Executing function {function_name} with args {function_args}")
             function_response = self.available_functions[function_name].run(function_args, self)
             with self.log_lock:
-                self.execution_log.append((tool_call, function_response))
+                self.execution_log.append({
+                    "function_name": function_name,
+                    "args": function_args,
+                    "response": function_response
+                })
             return function_response
 
     def handle_fn_calls(self, tool_calls):

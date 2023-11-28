@@ -1,14 +1,33 @@
 import json
 import os
 import threading
+import time
+import random
 from datetime import datetime
 from enum import Enum
-from ulid import ULID
 
 class Stage(Enum):
     TODO = "TODO"
     IN_PROGRESS = "IN_PROGRESS"
     DONE = "DONE"
+
+
+def base36encode(number):
+    """Converts an integer to a base36 string."""
+    if not isinstance(number, int):
+        raise TypeError('number must be an integer')
+
+    if number < 0:
+        return '-' + base36encode(-number)
+
+    digits = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+    res = ''
+    while number:
+        number, i = divmod(number, 36)
+        res = digits[i] + res
+
+    return res or '0'
 
 class FileBasedKanbanBoard:
     _lock = threading.Lock()
@@ -17,6 +36,18 @@ class FileBasedKanbanBoard:
         self.board_id = board_id
         self.file_path = f"{folder}/{board_id}_kanban_board.json"
         self._ensure_board_file()
+
+    @staticmethod
+    def _generate_id():
+        # Generate a 4-character timestamp component
+        timestamp = int(time.time())  # Get current Unix timestamp
+        timestamp_base36 = base36encode(timestamp)[-4:]  # Convert to base 36 and take last 4 characters
+
+        # Generate a 2-character random component
+        chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        random_component = ''.join(random.choice(chars) for _ in range(2))
+
+        return timestamp_base36 + random_component
 
     def _ensure_board_file(self):
         os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
@@ -60,7 +91,7 @@ class FileBasedKanbanBoard:
                         return card_id
 
             # Create new card if no ID is provided or ID not found
-            new_id = str(ULID())
+            new_id = self._generate_id()
             new_card = {
                 'id': new_id,
                 'name': name,
