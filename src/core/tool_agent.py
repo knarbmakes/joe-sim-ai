@@ -38,6 +38,7 @@ class ObjectConfig(NamedTuple):
     agent_service: Any
     bank_account: Any
     chroma_db_collection: Any
+    kanban_board: Any
 
 
 class ToolAgent:

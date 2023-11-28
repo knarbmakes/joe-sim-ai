@@ -6,6 +6,7 @@ import time
 from dotenv import load_dotenv
 from core.file_based_bank_account import FileBasedBankAccount
 from core.file_based_context import FileBasedContext
+from core.file_based_kanban import FileBasedKanbanBoard
 from core.tool_agent import ObjectConfig, TextConfig, ToolAgent
 from datetime import datetime
 import chromadb
@@ -20,6 +21,9 @@ import tools.file_read
 import tools.file_write
 import tools.bash
 import tools.ask_human
+import tools.kanban_read
+import tools.kanban_upsert
+import tools.kanban_delete
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -62,7 +66,7 @@ def handle_verification_agent(
     return None
 
 
-def create_agent_config(agent_config, agent_id, bank_account, memory_collection):
+def create_agent_config(agent_config, agent_id, bank_account, memory_collection, kanban):
     text_config = TextConfig(
         agent_key=agent_config['agent_key'],
         model=agent_config['model'],
@@ -75,12 +79,13 @@ def create_agent_config(agent_config, agent_id, bank_account, memory_collection)
         agent_service=FileBasedContext(agent_id=agent_id, folder="memory/context"),
         bank_account=bank_account,
         chroma_db_collection=memory_collection,
+        kanban_board=kanban
     )
 
     return text_config, object_config
 
 
-def load_agent_configs(config_filename, bank_account, memory_collection):
+def load_agent_configs(config_filename, bank_account, memory_collection, kanban):
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -91,10 +96,10 @@ def load_agent_configs(config_filename, bank_account, memory_collection):
         config = json.load(file)
 
     # Config for the Answer Agent
-    task_agent_config = create_agent_config(config['task_agent'], "ta002", bank_account, memory_collection)
+    task_agent_config = create_agent_config(config['task_agent'], "ta002", bank_account, memory_collection, kanban)
 
     # Config for the Verification Agent
-    verifier_agent_config = create_agent_config(config['verifier_agent'], "va002", bank_account, memory_collection)
+    verifier_agent_config = create_agent_config(config['verifier_agent'], "va002", bank_account, memory_collection, kanban)
 
     return {
         "task_agent": task_agent_config,
@@ -108,10 +113,13 @@ def main():
     memory_collection = client.get_or_create_collection(name="coder_db")
     logging.info(f"Collection Loaded: {memory_collection.count()} documents")
 
+    # Initialize Kanban Board
+    kanban = FileBasedKanbanBoard(board_id="kb1", folder="memory/kanban")
+
     # Initialize Bank Account
     bank_account = FileBasedBankAccount(account_id="ba001", folder="memory/bank_account")
 
-    configs = load_agent_configs('agent_config.json', bank_account, memory_collection)
+    configs = load_agent_configs('agent_config.json', bank_account, memory_collection, kanban)
     task_agent = ToolAgent(*configs['task_agent'])
 
     while True:
