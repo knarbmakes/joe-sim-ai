@@ -16,6 +16,7 @@ class KanbanUpsert(BaseTool):
 
     @classmethod
     def get_definition(cls, agent_self: dict) -> dict:
+        stage_values = [stage.value for stage in Stage]
         return {
             "name": cls.get_name(),
             "description": "Upsert a card on the Kanban board. Use this to add a new card or update an existing one.",
@@ -36,7 +37,7 @@ class KanbanUpsert(BaseTool):
                     },
                     "stage": {
                         "type": "string",
-                        "enum": Stage.get_values(),
+                        "enum": stage_values,
                         "description": "The stage of the card."
                     }
                 },

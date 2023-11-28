@@ -16,6 +16,7 @@ class KanbanRead(BaseTool):
 
     @classmethod
     def get_definition(cls, agent_self: dict) -> dict:
+        stage_values = [stage.value for stage in Stage]
         return {
             "name": cls.get_name(),
             "description": "Read cards from the Kanban board. You can filter by stage.",
@@ -24,7 +25,7 @@ class KanbanRead(BaseTool):
                 "properties": {
                     "stage": {
                         "type": "string",
-                        "enum": Stage.get_values(),
+                        "enum": stage_values,
                         "description": "Optional. The stage to filter the cards by."
                     }
                 },
