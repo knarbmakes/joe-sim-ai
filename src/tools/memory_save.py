@@ -1,33 +1,30 @@
-
 import json
 import logging
 import traceback
-import chromadb
-from ulid import ULID
 from core.base_tool import BaseTool
+from core.idgen import generate_id
 from core.tool_registry import register_fn
 from datetime import datetime
 
-# Configure logger for the ChromaDBSave class
 logger = logging.getLogger(__name__)
 
 @register_fn
-class MemorySave(BaseTool):
+class MemoryUpsert(BaseTool):
     @classmethod
     def get_name(cls) -> str:
-        return "memory_save"
+        return "memory_upsert"
 
     @classmethod
     def get_definition(cls, agent_self: dict) -> dict:
         return {
             "name": cls.get_name(),
-            "description": "Save a memory document to ChromaDB. Useful if you have something you want to remember for a long time.",
+            "description": "Upsert a memory document to ChromaDB. Can be used to create or update a memory.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "truth_score": {
-                        "type": "number",
-                        "description": "Numerical confidence score from 1-100 on this memory. Higher numbers mean you are convinced this is a truthful memory."
+                    "id": {
+                        "type": "string",
+                        "description": "Optional unique identifier for the memory. If provided, updates an existing memory."
                     },
                     "label": {
                         "type": "string",
@@ -35,41 +32,44 @@ class MemorySave(BaseTool):
                     },
                     "details": {
                         "type": "string",
-                        "description": "The meat of the memory, capturing the most important things to remember for the future."
+                        "description": "Details of the memory."
                     },
                     "type": {
                         "type": "string",
-                        "description": "The type of memory, e.g., 'fact', 'idea', 'plan', 'goal', 'insight', 'question', 'answer', 'task', 'reminder', 'note', 'thought', 'feeling', 'event', 'experience', 'story', 'quote', 'image', 'video', 'audio', 'link', 'file', 'other'."
+                        "description": "The type of memory."
                     },
                 },
-                "required": ["truth_score", "label", "details", "type"]
+                "required": []
             }
         }
-    
+
     @classmethod
     def run(cls, args: dict, agent_self: dict) -> str:
-        validation_error = cls.validate_args(args, agent_self)
-        if validation_error:
-            return json.dumps({"error": f"Invalid arguments: {validation_error}"})
-        
-        memory_id = str(ULID())
-        document = str(args['details'])
+        if "id" not in args:
+            required_fields = ["label", "details", "type"]
+            for field in required_fields:
+                if field not in args:
+                    return json.dumps({"error": f"Missing required field: {field}"})
+
+            args["id"] = generate_id(6)  # Generate a new ID if not provided
+
+        document = str(args.get('details', ''))
         metadata = {
-            "id": memory_id,
-            "truth_score": str(args['truth_score']),
-            "label": str(args['label']),
-            "type": str(args['type']),
-            "created_at": str(datetime.utcnow().isoformat())
+            "id": args["id"],
+            "label": str(args.get('label', '')),
+            "type": str(args.get('type', ''))
         }
+        if "id" not in args:
+            metadata["created_at"] = str(datetime.utcnow().isoformat())
         collection = agent_self.object_config.chroma_db_collection
-        
+
         try:
-            collection.add(documents=[document], metadatas=[metadata], ids=[memory_id])
+            # Use upsert method to insert or update the document based on the provided ID
+            collection.upsert(documents=[document], metadatas=[metadata], ids=[args["id"]])
         except Exception as e:
             traceback.print_exc()  # Print the stack trace
-            logger.error(f"Error in saving memory: {e}")
+            logger.error(f"Error in upserting memory: {e}")
             return json.dumps({"error": str(e)})
 
-        logger.info(f"Memory saved successfully with ID: {memory_id}")
-        return json.dumps({"result": "Memory saved successfully", "memory_id": memory_id})
-
+        logger.info(f"Memory upserted successfully with ID: {args['id']}")
+        return json.dumps({"result": "Memory upserted successfully", "memory_id": args['id']})

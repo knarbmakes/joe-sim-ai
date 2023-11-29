@@ -32,7 +32,6 @@ logger.setLevel(logging.INFO)
 # Load environment variables from .env file
 load_dotenv()
 
-
 def run_agent(task_agent, user_input, sys_message_suffix, user_name):
     logger.info(f"Running Agent {task_agent.agent_key}...")
     response = task_agent.run(
@@ -50,11 +49,15 @@ def run_agent(task_agent, user_input, sys_message_suffix, user_name):
 def create_agent_config(
     agent_config, agent_id, bank_account, memory_collection, kanban
 ):
+    response_format = ""
+    if "response_format" in agent_config.get("kwargs", {}):
+        response_format = "\n\nYou output responses in the following JSON format:\n" + json.stringify(agent_config['response_schema'], indent=2)
+
     text_config = TextConfig(
         agent_key=agent_config["agent_key"],
         model=agent_config["model"],
         available_functions=agent_config["available_functions"],
-        system_message=agent_config["system_message"],
+        system_message=agent_config["system_message"] + response_format,
         kwargs=agent_config.get("kwargs", {}),
     )
     object_config = ObjectConfig(
@@ -83,12 +86,7 @@ def load_agent_configs(config_filename, bank_account, memory_collection, kanban)
         config["task_agent"], "ta002", bank_account, memory_collection, kanban
     )
 
-    # Config for the Verification Agent
-    verifier_agent_config = create_agent_config(
-        config["verifier_agent"], "va002", bank_account, memory_collection, kanban
-    )
-
-    return {"task_agent": task_agent_config, "verifier_agent": verifier_agent_config}
+    return {"task_agent": task_agent_config}
 
 
 def main():
@@ -110,9 +108,6 @@ def main():
     )
 
     task_agent = ToolAgent(*configs["task_agent"])
-    verifier_agent = ToolAgent(*configs["verifier_agent"])
-    task_agent_input = None
-    verifier_output = None
 
     while True:
         try:
@@ -127,12 +122,8 @@ def main():
                 break
 
             sys_message_suffix = f"\n\nCurrent Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nCurrent Account Balance: ${current_balance:.2f}"
-
-            task_agent_input = verifier_output.get("output") if verifier_output else None
-            answer_output = run_agent(task_agent, task_agent_input, sys_message_suffix, "verifier_agent")
-
-            input_with_tool_log = f"Task Agent execution log:\n{answer_output.get('tool_execution_log')}\n\Task Agent reply:\n{answer_output.get('output')}\n"
-            verifier_output = run_agent(verifier_agent, input_with_tool_log, sys_message_suffix, "task_agent")
+            answer_output = run_agent(task_agent, None, sys_message_suffix, "user")
+            print(json.dumps(answer_output.get("output"), indent=2))
         except Exception as e:
             traceback.print_exc()
             logging.error(f"Error: {e}")

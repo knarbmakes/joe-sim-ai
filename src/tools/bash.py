@@ -4,28 +4,36 @@ import time
 from core.base_tool import BaseTool
 from core.tool_registry import register_fn
 
-MAX_OUTPUT_LENGTH = 5000  # Maximum characters to output
-MAX_INPUT_LENGTH = 2000  # Maximum characters to input
-COMMAND_TIMEOUT = 60     # Timeout for command execution in seconds
-
 @register_fn
 class RunBashCommand(BaseTool):
+    MAX_OUTPUT_LENGTH = 5000
+    MAX_INPUT_LENGTH = 2000
+    DEFAULT_COMMAND_TIMEOUT = 60  # Default timeout for command execution in seconds
 
     @classmethod
     def get_name(cls) -> str:
         return "bash"
-    
+
     @classmethod
     def get_definition(cls, agent_self: dict) -> dict:
         return {
             "name": cls.get_name(),
-            "description": f"Executes a specified bash command within a timeout and returns its output, limiting the output to the last {MAX_OUTPUT_LENGTH} characters.",
+            "description": (f"Executes a specified bash command within a timeout and returns its output, "
+                            f"limiting the output to the last {RunBashCommand.MAX_OUTPUT_LENGTH} characters. IMPORTANT: "
+                            "Pay very close attention to escaping quotes and other special characters "
+                            "when writing commands that write to files."),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command": {
                         "type": "string",
-                        "description": f"The bash command to execute. Please ensure the command is concise, as there is a maximum length of {MAX_INPUT_LENGTH} characters enforced for security and performance reasons."
+                        "description": (f"The bash command to execute. Please ensure the command is concise, "
+                                        f"as there is a maximum length of {RunBashCommand.MAX_INPUT_LENGTH} characters enforced "
+                                        "for security and performance reasons.")
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": "Optional custom timeout in seconds for the command execution."
                     }
                 },
                 "required": ["command"]
@@ -39,29 +47,36 @@ class RunBashCommand(BaseTool):
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})
 
         command = args["command"]
-        if len(command) > MAX_INPUT_LENGTH:
-            return json.dumps({"error": f"Command exceeds the maximum length of {MAX_INPUT_LENGTH} characters."})
+        custom_timeout = float(args.get("timeout", RunBashCommand.DEFAULT_COMMAND_TIMEOUT))
+
+        if len(command) > RunBashCommand.MAX_INPUT_LENGTH:
+            return json.dumps({"error": f"Command exceeds the maximum length of {RunBashCommand.MAX_INPUT_LENGTH} characters."})
 
         try:
-            t0 = time.time()
+            start_time = time.time()
 
-            result = subprocess.run(command, shell=True, check=True, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=COMMAND_TIMEOUT)
-            stdout_tail = (result.stdout[-MAX_OUTPUT_LENGTH:] if len(result.stdout) > MAX_OUTPUT_LENGTH else result.stdout)
-            stderr_tail = (result.stderr[-MAX_OUTPUT_LENGTH:] if len(result.stderr) > MAX_OUTPUT_LENGTH else result.stderr)
+            # Using subprocess.check_output
+            output = subprocess.check_output(command, shell=True, text=True, timeout=custom_timeout)
+            was_truncated = len(output) > RunBashCommand.MAX_OUTPUT_LENGTH
+            output = output[-RunBashCommand.MAX_OUTPUT_LENGTH:]  # Truncate the output if it's too long
 
-            tn = time.time()
-            duration = tn - t0
+            end_time = time.time()
+            duration = end_time - start_time
 
-            return json.dumps({
-                "stdout": stdout_tail,
-                "stderr": stderr_tail,
-                "duration": f"{duration:.2f}s"
-            })
+            result = {
+                "status": 0,
+                "output": output,
+                "duration": f"{duration:.2f}s",
+            }
+            # if was_truncated, add the truncated key
+            if was_truncated:
+                result["truncated"] = f"NOTE: output was truncated to the last {RunBashCommand.MAX_OUTPUT_LENGTH} characters."
+            return json.dumps(result)
 
         except subprocess.TimeoutExpired:
-            return json.dumps({"error": "Command timed out in {COMMAND_TIMEOUT}s."})
+            return json.dumps({"error": f"Command timed out in {custom_timeout}s."})
         except subprocess.CalledProcessError as e:
-            stderr_tail = e.stderr[-MAX_OUTPUT_LENGTH:] if len(e.stderr) > MAX_OUTPUT_LENGTH else e.stderr
-            return json.dumps({"error": f"Command failed: {stderr_tail}"})
+            return json.dumps({"error": f"{e}"})
         except Exception as e:
             return json.dumps({"error": f"Unexpected error: {str(e)}"})
+

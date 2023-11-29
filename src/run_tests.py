@@ -14,6 +14,6 @@ if __name__ == "__main__":
     test_dir = os.path.join(os.path.dirname(__file__), 'tests')
     
     # Discover and run tests
-    suite = unittest.TestLoader().discover(start_dir=test_dir, pattern="test_*.py")
+    suite = unittest.TestLoader().discover(start_dir=test_dir, pattern="*_test.py")
     runner = unittest.TextTestRunner(resultclass=QuietTestResult)
     runner.run(suite)
