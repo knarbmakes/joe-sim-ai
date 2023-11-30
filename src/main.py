@@ -51,7 +51,7 @@ def create_agent_config(
 ):
     response_format = ""
     if "response_format" in agent_config.get("kwargs", {}):
-        response_format = "\n\nYou output responses in the following JSON format:\n" + json.stringify(agent_config['response_schema'], indent=2)
+        response_format = "\n\nYou output responses in the following JSON format:\n" + json.dumps(agent_config['response_schema'], indent=2)
 
     text_config = TextConfig(
         agent_key=agent_config["agent_key"],
