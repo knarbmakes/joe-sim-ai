@@ -1,5 +1,6 @@
 import json
 from core.base_tool import BaseTool
+from core.tool_agent import ToolAgent
 from core.tool_registry import register_fn
 
 MAX_FILE_SIZE = 5000  # Maximum characters to output
@@ -33,7 +34,7 @@ class FileRead(BaseTool):
         }
 
     @classmethod
-    def run(cls, args: dict, agent_self: dict) -> str:
+    def run(cls, args: dict, agent_self: ToolAgent) -> str:
         validation_error = cls.validate_args(args, agent_self)
         if validation_error:
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})

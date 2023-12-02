@@ -1,7 +1,7 @@
 import json
 import logging
 from core.cost_helper import get_context_window, num_tokens_from_message, num_tokens_from_string
-from core.tool_agent import ObjectConfig, TextConfig
+from core.joe_types import ObjectConfig, TextConfig
 from typing import Union
 
 logger = logging.getLogger(__name__)

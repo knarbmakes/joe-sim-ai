@@ -3,6 +3,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from core.base_tool import BaseTool
+from core.tool_agent import ToolAgent
 from core.tool_registry import register_fn
 
 @register_fn
@@ -34,7 +35,7 @@ class WebSearch(BaseTool):
         }
 
     @classmethod
-    def run(cls, args: dict, agent_self: dict) -> str:
+    def run(cls, args: dict, agent_self: ToolAgent) -> str:
         validation_error = cls.validate_args(args, agent_self)
         if validation_error:
             return json.dumps({"error": f"Invalid arguments: {validation_error}"})

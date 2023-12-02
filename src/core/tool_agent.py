@@ -5,18 +5,14 @@ import traceback
 import logging
 
 from dotenv import load_dotenv
-from core.file_based_bank_account import FileBasedBankAccount
-from core.file_based_context import FileBasedContext
-from core.file_based_kanban import FileBasedKanbanBoard
 from core.function_call_handler import FunctionCallHandler
 from core.message_stack_builder import MessageStackBuilder
 from core.cost_helper import (
     calculate_cost,
 )
-from core.tool_registry import ToolRegistry
-from typing import NamedTuple, Dict, Any, Optional
+from typing import Any
 from datetime import datetime
-import concurrent.futures
+from core.joe_types import TextConfig, ObjectConfig
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -26,24 +22,6 @@ load_dotenv()
 openai_client = openai.OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
-
-
-class TextConfig(NamedTuple):
-    agent_key: Optional[str]
-    model: str
-    available_functions: list[str]
-    system_message: Optional[str]
-    kwargs: Dict[str, Any]
-
-
-class ObjectConfig(NamedTuple):
-    agent_id: str
-    agent_service: FileBasedContext
-    bank_account: FileBasedBankAccount
-    chroma_db_collection: Any
-    kanban_board: FileBasedKanbanBoard
-
-
 class ToolAgent:
     def __init__(self, text_config: TextConfig, object_config: ObjectConfig):
         # Every agent needs a key, so generate one if it is not provided.
