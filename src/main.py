@@ -115,7 +115,7 @@ def main():
             logging.info(f"Current balance: ${current_balance}")
 
             # Add some delay to simulate human response time
-            time.sleep(200)
+            time.sleep(0.2)
 
             if current_balance <= 0:
                 logging.info("Bank account balance depleted, exiting...")
@@ -127,7 +127,7 @@ def main():
                 logging.warn("Agent returned no output...")
                 num_errors += 1
                 continue
-            
+
             print(json.dumps(answer_output.get("output"), indent=2))
             num_errors = 0
         except Exception as e:
