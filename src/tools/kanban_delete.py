@@ -2,6 +2,7 @@ import json
 import logging
 import traceback
 from core.base_tool import BaseTool
+from core.tool_agent import ToolAgent
 from core.tool_registry import register_fn
 
 # Configure logger for the KanbanDelete class
@@ -14,7 +15,7 @@ class KanbanDelete(BaseTool):
         return "kanban_delete"
 
     @classmethod
-    def get_definition(cls, agent_self: dict) -> dict:
+    def get_definition(cls, agent_self: ToolAgent) -> dict:
         return {
             "name": cls.get_name(),
             "description": "Delete a card from the Kanban board based on its ID.",
@@ -31,7 +32,7 @@ class KanbanDelete(BaseTool):
         }
 
     @classmethod
-    def run(cls, args: dict, agent_self: dict) -> str:
+    def run(cls, args: dict, agent_self: ToolAgent) -> str:
         card_id = args.get('card_id')
         if not card_id:
             return json.dumps({"error": "Card ID is required for deletion."})

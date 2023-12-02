@@ -5,6 +5,9 @@ import traceback
 import logging
 
 from dotenv import load_dotenv
+from core.file_based_bank_account import FileBasedBankAccount
+from core.file_based_context import FileBasedContext
+from core.file_based_kanban import FileBasedKanbanBoard
 from core.function_call_handler import FunctionCallHandler
 from core.message_stack_builder import MessageStackBuilder
 from core.cost_helper import (
@@ -35,10 +38,10 @@ class TextConfig(NamedTuple):
 
 class ObjectConfig(NamedTuple):
     agent_id: str
-    agent_service: Any
-    bank_account: Any
+    agent_service: FileBasedContext
+    bank_account: FileBasedBankAccount
     chroma_db_collection: Any
-    kanban_board: Any
+    kanban_board: FileBasedKanbanBoard
 
 
 class ToolAgent:
@@ -73,7 +76,7 @@ class ToolAgent:
             return False
         return True
 
-    def run(self, input_messages=None, sys_message_suffix=None):
+    def run(self, input_messages=None, sys_message_suffix=None) -> dict[str, Any]:
         try:
             if not self.bank_account.get_balance() > 0:
                 return {"status": "error", "error": "Budget limit exceeded"}

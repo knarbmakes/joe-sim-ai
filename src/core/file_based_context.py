@@ -8,7 +8,7 @@ class FileBasedContext:
         self.folder = folder
         self.agent_id = agent_id
 
-    def update_context_memory(self, memory_elements: List[Dict], final_count: int = 0):
+    def update_context_memory(self, memory_elements: List[Dict] = [], final_count: int = 0) -> List[Dict]:
         file_path = f"{self.folder}/{self.agent_id}_context_memory.json"
         context_memory = []
 
@@ -20,11 +20,11 @@ class FileBasedContext:
             with open(file_path, "r") as file:
                 context_memory = json.load(file)
 
-        # Update context memory
-        if memory_elements:
+        # Update context memory if we have new memory elements
+        if len(memory_elements) > 0:
             context_memory.extend(memory_elements)
 
-        # Slice context memory if final_count is provided
+        # Slice context memory if final_count is provided, we want to keep the most recent messages
         if final_count > 0:
             context_memory = context_memory[-final_count:]
 

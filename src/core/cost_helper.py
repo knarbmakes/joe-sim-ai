@@ -1,6 +1,7 @@
 from decimal import Decimal
 import json
 import tiktoken
+from decimal import Decimal
 
 # Define the cost lookup dictionary
 cost_lookup = {
@@ -10,7 +11,7 @@ cost_lookup = {
     "gpt-4-1106-preview": {"inputCost": Decimal("0.01") / 1000, "outputCost": Decimal("0.03") / 1000, "context_window": 16385}, # Can actually be 128000, but we want to be conservative
 }
 
-def get_context_window(model):
+def get_context_window(model: str) -> int:
     """
     Get the token cap for a given model.
     
@@ -22,7 +23,8 @@ def get_context_window(model):
     """
     return cost_lookup[model]['context_window']
 
-def calculate_cost(usage, model):
+
+def calculate_cost(usage: dict, model: str) -> Decimal:
     """
     Calculate the dollar cost based on usage and model type.
     
@@ -34,8 +36,8 @@ def calculate_cost(usage, model):
     - Decimal: The calculated cost in dollars (micro dollar amounts)
     """
     try:
-        input_cost = max(usage['prompt_tokens'], 0) * cost_lookup[model]['inputCost']
-        output_cost = max(usage['completion_tokens'], 0) * cost_lookup[model]['outputCost']
+        input_cost = max(usage['prompt_tokens'], 0) * Decimal(cost_lookup[model]['inputCost'])
+        output_cost = max(usage['completion_tokens'], 0) * Decimal(cost_lookup[model]['outputCost'])
         total_cost = input_cost + output_cost
         return total_cost
     except KeyError:

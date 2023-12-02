@@ -3,6 +3,7 @@ import logging
 import traceback
 from core.base_tool import BaseTool
 from core.idgen import generate_id
+from core.tool_agent import ToolAgent
 from core.tool_registry import register_fn
 from datetime import datetime
 
@@ -15,7 +16,7 @@ class MemoryUpsert(BaseTool):
         return "memory_upsert"
 
     @classmethod
-    def get_definition(cls, agent_self: dict) -> dict:
+    def get_definition(cls, agent_self: ToolAgent) -> dict:
         return {
             "name": cls.get_name(),
             "description": "Upsert a memory document to ChromaDB. Can be used to create or update a memory.",
@@ -44,7 +45,7 @@ class MemoryUpsert(BaseTool):
         }
 
     @classmethod
-    def run(cls, args: dict, agent_self: dict) -> str:
+    def run(cls, args: dict, agent_self: ToolAgent) -> str:
         if "id" not in args:
             required_fields = ["label", "details", "type"]
             for field in required_fields:

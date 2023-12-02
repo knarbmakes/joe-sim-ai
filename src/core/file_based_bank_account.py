@@ -47,12 +47,12 @@ class FileBasedBankAccount:
         with open(file_path, 'w') as file:
             json.dump(data, file, indent=2)
 
-    def get_balance(self) -> int:
+    def get_balance(self) -> Decimal:
         with FileBasedBankAccount._lock:
             account_data = self._read_account_data(self.file_path)
             return account_data["balance"]
 
-    def subtract_balance(self, amount: int, agent_id: str) -> bool:
+    def subtract_balance(self, amount: Decimal, agent_id: str) -> bool:
         with FileBasedBankAccount._lock:
             account_data = self._read_account_data(self.file_path)
 

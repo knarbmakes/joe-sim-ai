@@ -10,6 +10,7 @@ from core.file_based_kanban import FileBasedKanbanBoard
 from core.tool_agent import ObjectConfig, TextConfig, ToolAgent
 from datetime import datetime
 import chromadb
+from typing import Any, Union
 
 # IMPORTANT: Import all tools so registry can be populated
 import tools.asteval
@@ -32,12 +33,10 @@ logger.setLevel(logging.INFO)
 # Load environment variables from .env file
 load_dotenv()
 
-def run_agent(task_agent, user_input, sys_message_suffix, user_name):
+def run_agent(task_agent: ToolAgent, user_name: str, user_input: Union[str, None] = None, sys_message_suffix: Union[str, None] = None) -> Union[dict[str, Any], None]:
     logger.info(f"Running Agent {task_agent.agent_key}...")
     response = task_agent.run(
-        input_messages=[{"role": "user", "name": user_name, "content": user_input}]
-        if user_input
-        else None,
+        input_messages=[{"role": "user", "name": user_name, "content": user_input}] if user_input else None,
         sys_message_suffix=sys_message_suffix,
     )
     if response and response.get("status") == "success":
@@ -109,24 +108,35 @@ def main():
 
     task_agent = ToolAgent(*configs["task_agent"])
 
+    num_errors = 0
     while True:
         try:
             current_balance = bank_account.get_balance()
             logging.info(f"Current balance: ${current_balance}")
 
             # Add some delay to simulate human response time
-            time.sleep(1)
+            time.sleep(200)
 
             if current_balance <= 0:
                 logging.info("Bank account balance depleted, exiting...")
                 break
 
-            sys_message_suffix = f"\n\nCurrent Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nCurrent Account Balance: ${current_balance:.2f}"
-            answer_output = run_agent(task_agent, None, sys_message_suffix, "user")
+            suffix = f"\n\nCurrent Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nCurrent Account Balance: ${current_balance:.2f}"
+            answer_output = run_agent(task_agent=task_agent, user_name="user", user_input=None, sys_message_suffix=suffix)
+            if not answer_output:
+                logging.warn("Agent returned no output...")
+                num_errors += 1
+                continue
+            
             print(json.dumps(answer_output.get("output"), indent=2))
+            num_errors = 0
         except Exception as e:
             traceback.print_exc()
             logging.error(f"Error: {e}")
+            num_errors += 1
+            if num_errors >= 3:
+                logging.error(f"Max sequential errors reached, exiting...")
+                break
 
 
 if __name__ == "__main__":
