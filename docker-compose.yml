@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    volumes:
+      - $SSH_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb
+      - $SSH_PUB_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb.pub
+      - $MEMORY_PATH:/home/$USERNAME/memory
+      - $DOWNLOADS_PATH:/home/$USERNAME/downloads
+      - $ENV_FILE_PATH:/home/$USERNAME/tmp/.env
+      - $HOME/.ssh/config_docker:/home/$USERNAME/.ssh/config
+    working_dir: /home/$USERNAME
+    command: ["/bin/bash", "-c", "./home/$USERNAME/joe-sim-ai/run_in_container.sh"]
+
+  neo4j:
+    image: neo4j:latest
+    environment:
+      NEO4J_AUTH: neo4j/test
+    volumes:
+      - $MEMORY_PATH:/data
+      - $MEMORY_PATH:/logs
+      - $MEMORY_PATH:/var/lib/neo4j/import
+      - $MEMORY_PATH:/plugins
+      -v $HOME/neo4j/data:/data \
+      -v $HOME/neo4j/logs:/logs \
+      -v $HOME/neo4j/import:/var/lib/neo4j/import \
+      -v $HOME/neo4j/plugins:/plugins \
+
