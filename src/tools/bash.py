@@ -21,7 +21,7 @@ class RunBashCommand(BaseTool):
             "name": cls.get_name(),
             "description": (f"Executes a specified bash command within a timeout and returns its output, "
                             f"limiting the output to the last {RunBashCommand.MAX_OUTPUT_LENGTH} characters. IMPORTANT: "
-                            "Pay very close attention to escaping quotes and other special characters "
+                            "Pay very close attention to escaping quotes and other special characters like newlines when needed "
                             "when writing commands that write to files."),
             "parameters": {
                 "type": "object",
