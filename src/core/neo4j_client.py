@@ -15,8 +15,12 @@ class Neo4jClient:
     def close(self):
         self.driver.close()
 
+    def _transaction(self, tx, query, parameters=None):
+        result = tx.run(query, parameters)
+        return [record.data() for record in result]
+
     def execute_query(self, query, parameters=None):
         with self.driver.session() as session:
-            result = session.execute_write(lambda tx: tx.run(query, parameters))
-            return [record.data() for record in result]
+            result = session.execute_write(self._transaction, query, parameters)
+            return result
 
