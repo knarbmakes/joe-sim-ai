@@ -14,19 +14,7 @@ import chromadb
 from typing import Any, Union
 
 # IMPORTANT: Import all tools so registry can be populated
-import tools.asteval
-import tools.memory_save
-import tools.memory_query
-import tools.memory_delete
-import tools.web_search
-import tools.file_read
-import tools.file_write
-import tools.bash
-import tools.ask_human
-import tools.kanban_read
-import tools.kanban_upsert
-import tools.kanban_delete
-import tools.cypher_query
+import tools
 
 # Configure logging
 logger = logging.getLogger(__name__)
