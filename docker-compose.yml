@@ -22,7 +22,7 @@ services:
   neo4j:
     image: neo4j:latest
     environment:
-      NEO4J_AUTH: neo4j/testBBAAA333
+      NEO4J_AUTH: neo4j/password123
     volumes:
       - $MEMORY_PATH/neo4j/data:/data
       - $MEMORY_PATH/neo4j/logs:/logs

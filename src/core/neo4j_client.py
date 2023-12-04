@@ -9,16 +9,14 @@ class Neo4jClient:
         password = os.getenv('NEO4J_PASSWORD', 'password')
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
 
+        # Execute a simple query to make sure we are connected
+        self.execute_query("MATCH (n) RETURN count(n)")
+
     def close(self):
         self.driver.close()
 
     def execute_query(self, query, parameters=None):
         with self.driver.session() as session:
             result = session.execute_write(lambda tx: tx.run(query, parameters))
-            return [record for record in result]
+            return [record.data() for record in result]
 
-if __name__ == "__main__":
-    client = Neo4jClient()
-    result = client.execute_query("CREATE (a:Greeting {message: $message}) RETURN a", {'message': 'Hello, World!'})
-    print(result)
-    client.close()
