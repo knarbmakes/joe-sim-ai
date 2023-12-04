@@ -20,17 +20,22 @@ class MessageStackBuilder:
             if "name" in message:
                 message["name"] = "".join([c for c in message["name"] if c.isalnum() or c in "-_"])
 
-            # Additionally clean names in 'tool_calls' if present
+            # Clean names in 'tool_calls' if present
             if "tool_calls" in message:
                 for tool_call in message["tool_calls"]:
+                    # Clean 'name' in tool_call
                     if "name" in tool_call:
                         tool_call["name"] = "".join(
                             [c for c in tool_call["name"] if c.isalnum() or c in "-_"]
                         )
 
+                    # Clean 'name' in 'function' within tool_call
+                    if "function" in tool_call and "name" in tool_call["function"]:
+                        tool_call["function"]["name"] = "".join(
+                            [c for c in tool_call["function"]["name"] if c.isalnum() or c in "-_"]
+                        )
+
         return messages
-
-
 
     def build_message_stack(self, sys_message_suffix: Union[str, None] = None):
             """
