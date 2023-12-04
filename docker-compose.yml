@@ -20,14 +20,19 @@ services:
     tty: true # Allocate a pseudo-TTY
 
   neo4j:
-    image: neo4j:latest
+    image: neo4j:5.14.0
     environment:
       NEO4J_AUTH: neo4j/password123
+      NEO4JLABS_PLUGINS: '["apoc"]' # Automatically install APOC
+      NEO4J_apoc_export_file_enabled: 'true' # Enable APOC export to file
+      NEO4J_apoc_import_file_enabled: 'true' # Enable APOC import from file
+      NEO4J_apoc_import_file_use__neo4j__config: 'true' # Optional, for additional file configurations
     volumes:
       - $MEMORY_PATH/neo4j/data:/data
       - $MEMORY_PATH/neo4j/logs:/logs
       - $MEMORY_PATH/neo4j/varlib:/var/lib/neo4j/import
-      - $MEMORY_PATH/neo4j/plugins:/plugins
+      - $MEMORY_PATH/neo4j/plugins:/plugins # Ensure this directory contains the APOC jar
     ports:
       - "7474:7474" # Publish HTTP port
       - "7687:7687" # Publish Bolt port
+

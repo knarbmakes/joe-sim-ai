@@ -14,6 +14,24 @@ class MessageStackBuilder:
         self.text_config = text_config
 
 
+    def clean_message_names(self, messages):
+        for message in messages:
+            # Clean 'name' in the top-level message
+            if "name" in message:
+                message["name"] = "".join([c for c in message["name"] if c.isalnum() or c in "-_"])
+
+            # Additionally clean names in 'tool_calls' if present
+            if "tool_calls" in message:
+                for tool_call in message["tool_calls"]:
+                    if "name" in tool_call:
+                        tool_call["name"] = "".join(
+                            [c for c in tool_call["name"] if c.isalnum() or c in "-_"]
+                        )
+
+        return messages
+
+
+
     def build_message_stack(self, sys_message_suffix: Union[str, None] = None):
             """
             Builds the latest message context stack for the agent.
@@ -81,4 +99,6 @@ class MessageStackBuilder:
             logger.debug(
                 f"Final message stack for {self.agent_key}: {json.dumps(messages, indent=2)}"
             )
+
+            messages = self.clean_message_names(messages)
             return messages
