@@ -7,3 +7,4 @@ chromadb
 python-ulid
 bs4
 pdfminer.six
+neo4j

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from core.file_based_bank_account import FileBasedBankAccount
 from core.file_based_context import FileBasedContext
 from core.file_based_kanban import FileBasedKanbanBoard
+from core.neo4j_client import Neo4jClient
 from core.tool_agent import ObjectConfig, TextConfig, ToolAgent
 from datetime import datetime
 import chromadb
@@ -46,7 +47,7 @@ def run_agent(task_agent: ToolAgent, user_name: str, user_input: Union[str, None
 
 
 def create_agent_config(
-    agent_config, agent_id, bank_account, memory_collection, kanban
+    agent_config, agent_id, bank_account, memory_collection, kanban, neo4j
 ):
     response_format = ""
     if "response_format" in agent_config.get("kwargs", {}):
@@ -65,12 +66,13 @@ def create_agent_config(
         bank_account=bank_account,
         chroma_db_collection=memory_collection,
         kanban_board=kanban,
+        neo4j=neo4j,
     )
 
     return text_config, object_config
 
 
-def load_agent_configs(config_filename, bank_account, memory_collection, kanban):
+def load_agent_configs(config_filename, bank_account, memory_collection, kanban, neo4j):
     # Get the directory of the current script
     script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -82,7 +84,7 @@ def load_agent_configs(config_filename, bank_account, memory_collection, kanban)
 
     # Config for the Answer Agent
     task_agent_config = create_agent_config(
-        config["task_agent"], "ta002", bank_account, memory_collection, kanban
+        config["task_agent"], "ta002", bank_account, memory_collection, kanban, neo4j
     )
 
     return {"task_agent": task_agent_config}
@@ -91,6 +93,7 @@ def load_agent_configs(config_filename, bank_account, memory_collection, kanban)
 def main():
     # Initialize Collection for this Agent
     client = chromadb.PersistentClient(path="memory/chroma_db")
+    neo4j = Neo4jClient()
     memory_collection = client.get_or_create_collection(name="coder_db")
     logging.info(f"Collection Loaded: {memory_collection.count()} documents")
 
@@ -103,7 +106,7 @@ def main():
     )
 
     configs = load_agent_configs(
-        "agent_config.json", bank_account, memory_collection, kanban
+        "agent_config.json", bank_account, memory_collection, kanban, neo4j
     )
 
     task_agent = ToolAgent(*configs["task_agent"])

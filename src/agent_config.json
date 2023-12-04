@@ -3,8 +3,7 @@
     "agent_key": "task_agent",
     "model": "gpt-4-1106-preview",
     "available_functions": [
-      "memory_upsert",
-      "memory_query",
+      "cypher_query",
       "web_search",
       "bash",
       "ask_human"

@@ -3,6 +3,8 @@ from core.file_based_context import FileBasedContext
 from core.file_based_kanban import FileBasedKanbanBoard
 from typing import NamedTuple, Optional, Dict, Any
 
+from core.neo4j_client import Neo4jClient
+
 
 class TextConfig(NamedTuple):
     agent_key: Optional[str]
@@ -18,3 +20,4 @@ class ObjectConfig(NamedTuple):
     bank_account: FileBasedBankAccount
     chroma_db_collection: Any
     kanban_board: FileBasedKanbanBoard
+    neo4j: Neo4jClient

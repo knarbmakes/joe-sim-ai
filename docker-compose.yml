@@ -6,26 +6,28 @@ services:
       context: .
       dockerfile: src/Dockerfile
     volumes:
-      - $SSH_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb
-      - $SSH_PUB_KEY_PATH:/home/$USERNAME/.ssh/id_ed25519_knarb.pub
+      - $SSH_AUTH_SOCK:/ssh-agent
       - $MEMORY_PATH:/home/$USERNAME/memory
       - $DOWNLOADS_PATH:/home/$USERNAME/downloads
       - $ENV_FILE_PATH:/home/$USERNAME/tmp/.env
-      - $HOME/.ssh/config_docker:/home/$USERNAME/.ssh/config
+      - $STARTUP_SCRIPT:/home/$USERNAME/run_in_container.sh
+      - $STARTUP_SCRIPT_2:/home/$USERNAME/run_app.sh
+    environment:
+      - SSH_AUTH_SOCK=/ssh-agent # Use the host's SSH agent within the container
     working_dir: /home/$USERNAME
-    command: ["/bin/bash", "-c", "./home/$USERNAME/joe-sim-ai/run_in_container.sh"]
+    command: ["/bin/bash", "/home/$USERNAME/run_in_container.sh"]
+    stdin_open: true # Keep STDIN open
+    tty: true # Allocate a pseudo-TTY
 
   neo4j:
     image: neo4j:latest
     environment:
-      NEO4J_AUTH: neo4j/test
+      NEO4J_AUTH: neo4j/testBBAAA333
     volumes:
-      - $MEMORY_PATH:/data
-      - $MEMORY_PATH:/logs
-      - $MEMORY_PATH:/var/lib/neo4j/import
-      - $MEMORY_PATH:/plugins
-      -v $HOME/neo4j/data:/data \
-      -v $HOME/neo4j/logs:/logs \
-      -v $HOME/neo4j/import:/var/lib/neo4j/import \
-      -v $HOME/neo4j/plugins:/plugins \
-
+      - $MEMORY_PATH/neo4j/data:/data
+      - $MEMORY_PATH/neo4j/logs:/logs
+      - $MEMORY_PATH/neo4j/varlib:/var/lib/neo4j/import
+      - $MEMORY_PATH/neo4j/plugins:/plugins
+    ports:
+      - "7474:7474" # Publish HTTP port
+      - "7687:7687" # Publish Bolt port
