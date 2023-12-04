@@ -26,6 +26,7 @@ import tools.ask_human
 import tools.kanban_read
 import tools.kanban_upsert
 import tools.kanban_delete
+import tools.cypher_query
 
 # Configure logging
 logger = logging.getLogger(__name__)
