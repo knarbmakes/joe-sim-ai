@@ -12,38 +12,10 @@ Joe Python Agent is an autonomous, self-improving agent designed to assist with 
 - A robust bank account balance and quota management system for managing operational costs.
 - A flexible communication system that allows for verification and feedback loops, improving the agent decisions over time.
 
-## Installation
-
-Ensure you have Python 3.x and the required pip packages installed:
-
-```
-python -m pip install -r requirements.txt
-```
-
 ## Usage
 
-- Start the agent by running the main script:
+To execute the Joe Python Agent, run the following command:
 
 ```
-python src/main.py
+./run_in_docker.sh
 ```
-
-- Utilize individual tools by accessing the `/tools/` directory.
-- Extend agent capabilities by adding new tools and commands into the `/src/tools/` directory.
-
-## Scripts
-
-Auxiliary scripts for specific tasks (e.g., document conversion, news digestion, stock price fetching) are included in the `/scripts/` directory.
-
-## Testing
-
-- Run unit tests with the following command to ensure integrity before making changes:
-
-```
-python src/run_tests.py
-```
-
-## License
-
-The project is open source and available under the [MIT License](LICENSE).
-
